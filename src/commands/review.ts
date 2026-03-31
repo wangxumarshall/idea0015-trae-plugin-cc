@@ -1,4 +1,5 @@
 import { getGitDiff, runTraeCli } from '../utils';
+import { detectBaseBranch, estimateReviewSize, formatEstimate } from '../utils/branch-detection';
 
 export async function review(args: string[], isAdversarial: boolean = false) {
     let baseBranch = 'main';
@@ -14,7 +15,24 @@ export async function review(args: string[], isAdversarial: boolean = false) {
         }
     }
 
-    console.log(`获取与 ${baseBranch} 的差异...`);
+    // Auto-detect base branch if not specified
+    if (!args.includes('--base')) {
+        console.log('🔍 自动检测基准分支...');
+        baseBranch = await detectBaseBranch();
+    }
+
+    // Estimate review size
+    console.log(`📊 分析变更大小...`);
+    const estimate = await estimateReviewSize(baseBranch);
+    console.log(formatEstimate(estimate));
+
+    // Auto-set background if recommended
+    if (!background && estimate.recommendation.useBackground) {
+        console.log('💡 自动启用后台模式 (使用 --background 覆盖)');
+        background = true;
+    }
+
+    console.log(`\n获取与 ${baseBranch} 的差异...`);
     const diff = await getGitDiff(baseBranch);
 
     if (!diff.trim()) {

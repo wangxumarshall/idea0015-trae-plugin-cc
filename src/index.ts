@@ -4,6 +4,8 @@ import { setup } from './commands/setup';
 import { review } from './commands/review';
 import { runTask } from './commands/run';
 import { status, result, cancel } from './commands/jobs';
+import { handleHook } from './commands/hooks';
+import { rescue } from './commands/rescue';
 
 async function main() {
   const args = process.argv.slice(2);
@@ -38,6 +40,12 @@ async function main() {
         break;
       case 'cancel':
         cancel(cmdArgs);
+        break;
+      case 'hooks':
+        await handleHook(cmdArgs);
+        break;
+      case 'rescue':
+        await rescue(cmdArgs);
         break;
       default:
         console.log(`未知命令: ${command}`);
