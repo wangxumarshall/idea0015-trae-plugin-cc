@@ -1,0 +1,30 @@
+{
+  "name": "trae-plugin-cc",
+  "version": "1.0.0",
+  "description": "在 Claude Code 中直接调用字节 Trae Agent (trae-cli) 做代码审查或任务委托",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wangxumarshall/trae-plugin-cc.git"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "plugin",
+    "trae",
+    "agent"
+  ],
+  "author": "wangxumarshall",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/wangxumarshall/trae-plugin-cc/issues"
+  },
+  "homepage": "https://github.com/wangxumarshall/trae-plugin-cc#readme",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

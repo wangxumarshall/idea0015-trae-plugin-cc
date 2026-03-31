@@ -1,0 +1,7 @@
+{
+  "name": "trae",
+  "description": "在 Claude Code 中直接调用字节 Trae Agent (trae-cli) 做代码审查或任务委托",
+  "version": "1.0.0",
+  "author": { "name": "wangxumarshall" },
+  "repository": "https://github.com/wangxumarshall/trae-plugin-cc"
+}

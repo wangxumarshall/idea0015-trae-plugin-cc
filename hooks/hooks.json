@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": ".*review.*",
+        "hooks": [
+          { "type": "command", "command": "trae-cli run \"审查通过后再继续执行\"" }
+        ]
+      }
+    ]
+  }
+}

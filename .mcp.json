@@ -1,0 +1,15 @@
+{
+  "tools": [
+    {
+      "name": "trae_run",
+      "description": "直接调用 trae-cli 执行任意自然语言任务",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "prompt": { "type": "string" }
+        },
+        "required": ["prompt"]
+      }
+    }
+  ]
+}

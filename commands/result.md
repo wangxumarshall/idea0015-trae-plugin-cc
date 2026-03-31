@@ -1,0 +1,14 @@
+# /trae:result
+
+**Description:**
+获取特定后台 Trae 任务的输出日志。
+
+**Usage:**
+```bash
+/trae:result <Task ID>
+```
+
+**Internal Execution:**
+```bash
+npx --yes trae-plugin-cc result <Task ID>
+```
