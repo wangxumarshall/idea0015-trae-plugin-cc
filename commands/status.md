@@ -1,3 +1,7 @@
+---
+description: 查看后台 Trae 任务状态
+---
+
 # /trae:status
 
 **Description:**

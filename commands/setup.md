@@ -1,3 +1,7 @@
+---
+description: 检查并引导初始化本地的 Trae Agent (trae-cli)
+---
+
 # /trae:setup
 
 **Description:**

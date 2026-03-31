@@ -1,3 +1,8 @@
+---
+description: 将任务委托给 Trae Agent 执行
+allowed-tools: Bash(trae-cli:*)
+---
+
 # /trae:run
 
 **Description:**

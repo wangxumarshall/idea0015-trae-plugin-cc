@@ -1,3 +1,7 @@
+---
+description: 获取后台 Trae 任务输出
+---
+
 # /trae:result
 
 **Description:**

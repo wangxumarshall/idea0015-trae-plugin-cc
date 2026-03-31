@@ -1,3 +1,8 @@
+---
+description: 对当前 Git 变更或指定 branch 进行标准的代码审查
+allowed-tools: Bash(git:*), Bash(trae-cli:*)
+---
+
 # /trae:review
 
 **Description:**

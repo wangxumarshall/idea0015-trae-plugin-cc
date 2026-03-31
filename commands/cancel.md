@@ -1,3 +1,8 @@
+---
+description: 强制取消后台 Trae 任务
+allowed-tools: Bash(kill)
+---
+
 # /trae:cancel
 
 **Description:**
