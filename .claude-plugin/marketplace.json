@@ -1,0 +1,22 @@
+{
+  "name": "trae-plugin-cc",
+  "owner": {
+    "name": "wangxumarshall"
+  },
+  "metadata": {
+    "description": "Trae integration for Claude Code",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "trae",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/wangxumarshall/trae-plugin-cc.git"
+      },
+      "description": "在 Claude Code 中调用字节 Trae Agent",
+      "version": "1.0.0",
+      "strict": true
+    }
+  ]
+}
