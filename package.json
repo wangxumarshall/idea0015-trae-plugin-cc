@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "在 Claude Code 中直接调用字节 Trae Agent (trae-cli) 做代码审查或任务委托",
   "main": "dist/index.js",
+  "bin": {
+    "trae-plugin-cc": "dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "test": "jest"

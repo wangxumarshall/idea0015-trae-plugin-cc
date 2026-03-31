@@ -60,7 +60,7 @@ export async function runTraeCli(prompt: string, background: boolean = false): P
         return `任务已在后台启动 (ID: ${timestamp})。\n使用 /trae:status 查看状态，或查看日志文件：${logFile}`;
     } else {
         try {
-            const { stdout, stderr } = await execAsync(`trae-cli run "${prompt.replace(/"/g, '\\"')}"`);
+            const { stdout, stderr } = await execAsync(`trae-cli run --print "${prompt.replace(/"/g, '\\"')}"`);
             return stdout || stderr;
         } catch (error: any) {
             throw new Error(`执行失败: ${error.message}\n${error.stdout}\n${error.stderr}`);
