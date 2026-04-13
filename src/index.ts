@@ -6,6 +6,8 @@ import { runTask } from './commands/run';
 import { status, result, cancel } from './commands/jobs';
 import { handleHook } from './commands/hooks';
 import { rescue } from './commands/rescue';
+import { sessions } from './commands/sessions';
+import { acp } from './commands/acp';
 
 async function main() {
   const args = process.argv.slice(2);
@@ -14,7 +16,7 @@ async function main() {
 
   if (!command) {
     console.log('用法: trae <command> [args]');
-    console.log('命令: setup, review, adversarial-review, run, status, result, cancel');
+    console.log('命令: setup, review, adversarial-review, run, status, result, cancel, sessions, acp');
     process.exit(1);
   }
 
@@ -47,9 +49,15 @@ async function main() {
       case 'rescue':
         await rescue(cmdArgs);
         break;
+      case 'sessions':
+        await sessions(cmdArgs);
+        break;
+      case 'acp':
+        await acp(cmdArgs);
+        break;
       default:
         console.log(`未知命令: ${command}`);
-        console.log('可用命令: setup, review, adversarial-review, run, status, result, cancel');
+        console.log('可用命令: setup, review, adversarial-review, run, status, result, cancel, sessions, acp');
         process.exit(1);
     }
   } catch (error: any) {

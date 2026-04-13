@@ -52,7 +52,7 @@ export async function runTraeCli(prompt: string, background: boolean = false): P
     const out = fs.openSync(logFile, 'a');
     const err = fs.openSync(logFile, 'a');
 
-    const child = spawn('trae-cli', ['run', '--print', prompt], {
+    const child = spawn('trae-cli', ['--print', prompt], {
       detached: true,
       stdio: ['ignore', out, err]
     });
@@ -67,7 +67,7 @@ export async function runTraeCli(prompt: string, background: boolean = false): P
   }
 
   return new Promise((resolve, reject) => {
-    const child = spawn('trae-cli', ['run', '--print', prompt], {
+    const child = spawn('trae-cli', ['--print', prompt], {
       stdio: ['ignore', 'pipe', 'pipe']
     });
 
@@ -106,3 +106,10 @@ export async function runTraeCli(prompt: string, background: boolean = false): P
     });
   });
 }
+
+export { SessionReader } from './utils/session-reader';
+export { AuthBridge } from './utils/auth-bridge';
+export { ContextBridge } from './utils/context-bridge';
+export { TraeExecutor } from './utils/trae-executor';
+export { AcpClient } from './utils/acp-client';
+export { AcpServerManager } from './utils/acp-server-manager';
