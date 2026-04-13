@@ -5,15 +5,11 @@
  */
 
 import { execSync } from 'child_process';
-import { existsSync, readdirSync, statSync, unlinkSync, readFileSync } from 'fs';
+import { existsSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join } from 'path';
+import { getPluginDir, getRunningJobs } from './job-utils.mjs';
 
-const PLUGIN_DIR = '.claude-trae-plugin';
 const CONFIG_FILE = '.trae/trae_config.yaml';
-
-function getPluginDir() {
-  return join(process.cwd(), PLUGIN_DIR);
-}
 
 function checkTraeCliInstalled() {
   // Use execSync only with fixed commands, no user input
@@ -28,30 +24,6 @@ function checkTraeCliInstalled() {
 function checkTraeConfig() {
   const configPath = join(process.cwd(), CONFIG_FILE);
   return existsSync(configPath);
-}
-
-function getRunningJobs() {
-  const pluginDir = getPluginDir();
-  if (!existsSync(pluginDir)) return [];
-
-  try {
-    const files = readdirSync(pluginDir);
-    const pids = files.filter(f => f.endsWith('.pid'));
-    const running = [];
-
-    for (const pidFile of pids) {
-      try {
-        const pid = parseInt(readFileSync(join(pluginDir, pidFile), 'utf-8').trim());
-        process.kill(pid, 0);
-        running.push(pidFile.replace('.pid', ''));
-      } catch {
-        // Process not running, skip
-      }
-    }
-    return running;
-  } catch {
-    return [];
-  }
 }
 
 function cleanupStaleLogs() {

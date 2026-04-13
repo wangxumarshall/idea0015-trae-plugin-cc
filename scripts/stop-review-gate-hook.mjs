@@ -5,10 +5,7 @@
  */
 
 import { execSync } from 'child_process';
-import { existsSync, readFileSync, readdirSync } from 'fs';
-import { join } from 'path';
-
-const PLUGIN_DIR = '.claude-trae-plugin';
+import { getRunningJobs } from './job-utils.mjs';
 
 function hasUncommittedChanges() {
   try {
@@ -25,30 +22,6 @@ function hasUncommittedChanges() {
     return false;
   } catch {
     return false;
-  }
-}
-
-function getRunningJobs() {
-  const pluginDir = join(process.cwd(), PLUGIN_DIR);
-  if (!existsSync(pluginDir)) return [];
-
-  try {
-    const files = readdirSync(pluginDir);
-    const pids = files.filter(f => f.endsWith('.pid'));
-    const running = [];
-
-    for (const pidFile of pids) {
-      try {
-        const pid = parseInt(readFileSync(join(pluginDir, pidFile), 'utf-8').trim());
-        process.kill(pid, 0);
-        running.push(pidFile.replace('.pid', ''));
-      } catch {
-        // Process not running
-      }
-    }
-    return running;
-  } catch {
-    return [];
   }
 }
 

@@ -3,10 +3,11 @@
  * trae-companion.mjs - Unified entry point for trae-plugin-cc
  */
 
-import { readFileSync, existsSync, readdirSync } from 'fs';
+import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync, spawn } from 'child_process';
+import { getRunningJobs } from './job-utils.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,9 +18,10 @@ const SUPPORTED_COMMANDS = [
   'status', 'result', 'cancel', 'rescue', 'estimate'
 ];
 
+const RAW_ARGS = process.argv.slice(2);
 const FLAGS = {
-  json: process.argv.includes('--json'),
-  verbose: process.argv.includes('--verbose')
+  json: RAW_ARGS.includes('--json'),
+  verbose: RAW_ARGS.includes('--verbose')
 };
 
 function outputJson(data) {
@@ -40,21 +42,6 @@ function checkTraeCli() {
 
 function checkTraeConfig() {
   return existsSync(join(process.cwd(), '.trae', 'trae_config.yaml'));
-}
-
-function getRunningJobs() {
-  const dir = join(process.cwd(), '.claude-trae-plugin');
-  if (!existsSync(dir)) return [];
-  try {
-    const files = readdirSync(dir).filter(f => f.endsWith('.pid'));
-    return files.map(f => {
-      try {
-        const pid = parseInt(readFileSync(join(dir, f), 'utf-8').trim());
-        process.kill(pid, 0);
-        return f.replace('.pid', '');
-      } catch { return null; }
-    }).filter(Boolean);
-  } catch { return []; }
 }
 
 function detectBaseBranch() {
@@ -121,20 +108,21 @@ async function runStatus() {
 }
 
 async function main() {
-  const args = process.argv.slice(2).filter(a => !a.startsWith('--'));
-  if (!args.length) { console.log('用法: trae-companion <cmd>'); process.exit(1); }
+  if (!RAW_ARGS.length) { console.log('用法: trae-companion <cmd>'); process.exit(1); }
 
-  const cmd = args[0];
+  const cmd = RAW_ARGS[0];
   if (!SUPPORTED_COMMANDS.includes(cmd)) { error(`未知命令: ${cmd}`); process.exit(1); }
+
+  const cmdArgs = RAW_ARGS.slice(1).filter(a => a !== '--json' && a !== '--verbose');
 
   try {
     switch (cmd) {
       case 'setup': await runSetup(); break;
-      case 'estimate': await runEstimate(args.slice(1)); break;
+      case 'estimate': await runEstimate(cmdArgs); break;
       case 'status': await runStatus(); break;
       default:
         const cli = join(PLUGIN_ROOT, 'dist', 'index.js');
-        const child = spawn('node', [cli, cmd, ...args.slice(1)], { stdio: 'inherit' });
+        const child = spawn('node', [cli, cmd, ...cmdArgs], { stdio: 'inherit' });
         child.on('close', process.exit);
     }
   } catch (e) { error(e.message); process.exit(1); }
