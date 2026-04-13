@@ -15,5 +15,5 @@ allowed-tools: Bash(kill)
 
 **Internal Execution:**
 ```bash
-npx --yes trae-plugin-cc cancel <Task ID>
+node "$CLAUDE_PLUGIN_DIR/dist/index.js" cancel <Task ID>
 ```

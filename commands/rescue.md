@@ -20,5 +20,5 @@ allowed-tools: Bash(git:*), Bash(trae-cli:*)
 
 **Internal Execution:**
 ```bash
-npx --yes trae-plugin-cc rescue [--context <text>] [--retries <n>] [--force]
+node "$CLAUDE_PLUGIN_DIR/dist/index.js" rescue [--context <text>] [--retries <n>] [--force]
 ```

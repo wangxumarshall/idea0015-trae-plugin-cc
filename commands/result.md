@@ -14,5 +14,5 @@ description: 获取后台 Trae 任务输出
 
 **Internal Execution:**
 ```bash
-npx --yes trae-plugin-cc result <Task ID>
+node "$CLAUDE_PLUGIN_DIR/dist/index.js" result <Task ID>
 ```

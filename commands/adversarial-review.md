@@ -22,5 +22,5 @@ allowed-tools: Bash(git:*), Bash(trae-cli:*)
 
 **Internal Execution:**
 ```bash
-npx --yes trae-plugin-cc adversarial-review [options]
+node "$CLAUDE_PLUGIN_DIR/dist/index.js" adversarial-review [options]
 ```

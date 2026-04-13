@@ -43,5 +43,5 @@ allowed-tools: Bash(trae-cli:*)
 
 **Internal Execution:**
 ```bash
-npx --yes trae-plugin-cc run "任务描述" [options]
+node "$CLAUDE_PLUGIN_DIR/dist/index.js" run "任务描述" [options]
 ```
