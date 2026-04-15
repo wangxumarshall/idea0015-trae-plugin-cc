@@ -7,7 +7,8 @@
     "trae-plugin-cc": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js --external:child_process --external:fs --external:path --external:os --external:util --external:process --banner:js='#!/usr/bin/env node' && chmod +x dist/index.js",
+    "build:tsc": "tsc",
     "test": "jest"
   },
   "repository": {
@@ -31,6 +32,7 @@
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
+    "esbuild": "^0.28.0",
     "jest": "^30.3.0",
     "ts-jest": "^29.4.6",
     "typescript": "^5.0.0"

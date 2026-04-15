@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { setup } from './commands/setup';
 import { review } from './commands/review';
 import { runTask } from './commands/run';
