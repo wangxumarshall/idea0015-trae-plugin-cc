@@ -1,5 +1,4 @@
 import { spawn, ChildProcess } from 'child_process';
-import * as http from 'http';
 import { AcpClient } from '../utils/acp-client';
 
 export class AcpServerManager {
@@ -33,8 +32,15 @@ export class AcpServerManager {
         }
       }
 
+      // 设置环境变量，支持 PAT 认证
+      const env = { ...process.env };
+      if (process.env.TRAECLI_PERSONAL_ACCESS_TOKEN) {
+        env.TRAECLI_PERSONAL_ACCESS_TOKEN = process.env.TRAECLI_PERSONAL_ACCESS_TOKEN;
+      }
+
       const child = spawn('trae-cli', args, {
         stdio: ['ignore', 'pipe', 'pipe'],
+        env,
       });
 
       let started = false;

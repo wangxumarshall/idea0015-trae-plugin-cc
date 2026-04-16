@@ -3247,8 +3247,13 @@ var AcpServerManager = class {
           args.push("--disabled-tool", tool);
         }
       }
+      const env = { ...process.env };
+      if (process.env.TRAECLI_PERSONAL_ACCESS_TOKEN) {
+        env.TRAECLI_PERSONAL_ACCESS_TOKEN = process.env.TRAECLI_PERSONAL_ACCESS_TOKEN;
+      }
       const child = (0, import_child_process3.spawn)("trae-cli", args, {
-        stdio: ["ignore", "pipe", "pipe"]
+        stdio: ["ignore", "pipe", "pipe"],
+        env
       });
       let started = false;
       const detectPort = (text) => {
