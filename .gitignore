@@ -1,4 +1,9 @@
 node_modules/
+dist/
 .claude-trae-plugin/
 .claude/
 .omc/
+.codex/
+.entire/
+docs/
+plan.md

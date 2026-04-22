@@ -9,6 +9,7 @@
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js --external:child_process --external:fs --external:path --external:os --external:util --external:process --banner:js='#!/usr/bin/env node' && chmod +x dist/index.js",
     "build:tsc": "tsc",
+    "postinstall": "npm run build",
     "test": "jest"
   },
   "repository": {
