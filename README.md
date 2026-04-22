@@ -74,7 +74,8 @@ Scope: `--scope user` (global) | `--scope project` (current project) | `--scope 
 
 ```bash
 git clone https://github.com/wangxumarshall/trae-plugin-cc.git
-cd trae-plugin-cc && npm install && npm run build
+cd trae-plugin-cc
+npm install   # ⚡ auto-builds dist/ via postinstall
 claude plugin marketplace add "$(pwd)"
 claude plugin install trae
 ```
@@ -83,7 +84,8 @@ claude plugin install trae
 
 ```bash
 git clone https://github.com/wangxumarshall/trae-plugin-cc.git
-cd trae-plugin-cc && npm install && npm run build
+cd trae-plugin-cc
+npm install   # ⚡ auto-builds dist/ via postinstall
 cd .opencode && npm install && cd ..
 ```
 
@@ -104,6 +106,8 @@ Expected output:
   模型: GLM-5
   登录地址: https://console.enterprise.trae.cn
 ```
+
+> **What `npm install` does**: Automatically runs `npm run build` via the `postinstall` hook, producing `dist/index.js` (the runtime CLI). If you `git pull` new source changes, run `npm run build` again.
 
 ## Quick Start
 
@@ -322,6 +326,17 @@ npm run build          # esbuild → dist/index.js (run after ANY src/ change)
 npm test               # jest (all tests)
 cd .opencode && npm install && cd ..   # OpenCode deps (once)
 ```
+
+### Build After Pulling Updates
+
+When you pull new code from the repository:
+
+```bash
+git pull
+npm run build   # required if src/ files changed
+```
+
+> `npm install` also builds (via `postinstall`), so either command works after a `git pull`.
 
 ### ⚠️ Build Rule
 
