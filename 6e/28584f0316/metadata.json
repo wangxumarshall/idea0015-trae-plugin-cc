@@ -1,0 +1,49 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "6e28584f0316",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".opencode/tools/trae-acp.ts",
+    ".opencode/tools/trae-cancel.ts",
+    ".opencode/tools/trae-rescue.ts",
+    ".opencode/tools/trae-result.ts",
+    ".opencode/tools/trae-review.ts",
+    ".opencode/tools/trae-run.ts",
+    ".opencode/tools/trae-sessions.ts",
+    ".opencode/tools/trae-setup.ts",
+    ".opencode/tools/trae-status.ts",
+    "dist/index.js",
+    "scripts/stop-review-gate-hook.mjs",
+    "src/commands/jobs.ts",
+    "src/commands/rescue.ts",
+    "src/commands/review.ts",
+    "src/commands/run.ts",
+    "src/index.ts",
+    "src/utils.ts",
+    "src/utils/acp-client.ts",
+    "src/utils/acp-server-manager.ts",
+    "src/utils/auth-bridge.ts",
+    "src/utils/session-reader.ts",
+    "src/utils/trae-executor.ts",
+    "tests/commands/review.test.ts",
+    "tests/commands/run.test.ts",
+    "tests/utils.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/6e/28584f0316/0/metadata.json",
+      "transcript": "/6e/28584f0316/0/full.jsonl",
+      "content_hash": "/6e/28584f0316/0/content_hash.txt",
+      "prompt": "/6e/28584f0316/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 60085,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 6171,
+    "api_call_count": 3
+  }
+}

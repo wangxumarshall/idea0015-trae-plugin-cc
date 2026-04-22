@@ -1,0 +1,41 @@
+I need a complete, line-by-line understanding of the ACP (Agent Communication Protocol) implementation in this project. Read every relevant file thoroughly.
+
+## Files to read (read ALL of them completely):
+
+1. `src/commands/acp.ts` - the CLI command handler
+2. `src/utils/acp-server-manager.ts` - ACP server process management
+3. `src/utils/acp-client.ts` - ACP client for JSON-RPC
+4. `.opencode/tools/trae-acp.ts` - OpenCode's ACP tool wrapper
+5. `.mcp.json` - MCP ACP tool definition (only the trae_acp section)
+6. `.opencode/commands/trae-acp.md` - OpenCode ACP command doc
+7. `commands/acp.md` - Claude Code slash command for ACP
+8. `tests/commands/acp.test.ts` - if it exists, for test cases
+
+## For each file, provide:
+1. **Full content** - read every line, don't skip
+2. **Class/function signatures** with line numbers
+3. **Data flow** - how does a call flow from user/agent -> CLI -> ACP server -> trae-cli -> response
+4. **JSON-RPC message formats** - what exact messages are sent and received? What methods are called? What are the params?
+
+## Analysis questions to answer:
+1. What is the ACP protocol SPECIFICALLY? Is it a standard protocol or specific to trae-cli?
+2. How does `acp start` work? (hint: it blocks forever)
+3. How does `acp stop` work when `start` blocks?
+4. How does the client communicate with the server? (stdin/stdout, pipes, what JSON-RPC methods?)
+5. What JSON-RPC methods does trae-cli support? (initialize, run, stream, stop, shutdown, etc.)
+6. How does `acp run` vs `acp stream` differ? Show the exact code flow.
+7. How do `agents` and `status` work?
+8. What is the `AcpServerManager` doing? How does it track the server process?
+9. What is the `AcpClient` doing? How does it parse JSON-RPC responses?
+10. How does the OpenCode tool `trae-acp` differ from the Claude Code slash command `/trae:acp`?
+11. Is there any error handling? What happens if the server is already running, or not found?
+12. Are there any bugs, edge cases, or design issues in the current implementation?
+
+## Special attention:
+- The JSON-RPC protocol details (method names, request/response format, notification vs request)
+- Process lifecycle management (how is the ACP server started, tracked, stopped, and restarted)
+- The difference between `start` being a "blocking" operation vs other commands being non-blocking
+- How `stream` provides real-time output vs `run` which waits for completion
+- Any use of timeouts, signals, or cleanup
+
+Return the complete analysis structured by component, then a comprehensive protocol specification based on what you find.
