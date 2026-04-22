@@ -3,9 +3,25 @@
   "checkpoint_id": "ec6d4b35a23a",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 2,
+  "checkpoints_count": 5,
   "files_touched": [
-    "README.md"
+    ".opencode/tools/trae-cancel.ts",
+    ".opencode/tools/trae-rescue.ts",
+    ".opencode/tools/trae-result.ts",
+    ".opencode/tools/trae-sessions.ts",
+    ".opencode/tools/trae-setup.ts",
+    ".opencode/tools/trae-status.ts",
+    "README.md",
+    "commands/sessions.md",
+    "dist/commands/hooks.js",
+    "dist/commands/rescue.js",
+    "dist/commands/review.js",
+    "dist/commands/run.js",
+    "dist/commands/sessions.js",
+    "dist/utils.js",
+    "dist/utils/auth-bridge.js",
+    "dist/utils/session-reader.js",
+    "src/commands/rescue.ts"
   ],
   "sessions": [
     {
@@ -19,13 +35,19 @@
       "transcript": "/ec/6d4b35a23a/1/full.jsonl",
       "content_hash": "/ec/6d4b35a23a/1/content_hash.txt",
       "prompt": "/ec/6d4b35a23a/1/prompt.txt"
+    },
+    {
+      "metadata": "/ec/6d4b35a23a/2/metadata.json",
+      "transcript": "/ec/6d4b35a23a/2/full.jsonl",
+      "content_hash": "/ec/6d4b35a23a/2/content_hash.txt",
+      "prompt": "/ec/6d4b35a23a/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 244628,
+    "input_tokens": 11083944,
     "cache_creation_tokens": 0,
     "cache_read_tokens": 0,
-    "output_tokens": 5894,
-    "api_call_count": 13
+    "output_tokens": 32759,
+    "api_call_count": 151
   }
 }
