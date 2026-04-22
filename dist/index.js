@@ -3127,105 +3127,129 @@ var TraeExecutor = class {
 };
 
 // src/utils/acp-client.ts
-var http = __toESM(require("http"));
 var AcpClient = class {
-  baseUrl;
-  constructor(baseUrl = "http://localhost:8000") {
-    this.baseUrl = baseUrl;
-  }
-  async discoverAgents() {
-    try {
-      const result2 = await this.request("GET", "/agents");
-      return result2.agents || [];
-    } catch {
-      return [];
-    }
-  }
-  async runAgent(req) {
-    return this.request("POST", "/runs", req);
-  }
-  async getRun(runId) {
-    return this.request("GET", `/runs/${runId}`);
-  }
-  async runStream(req, onEvent) {
-    const url = new URL("/runs/stream", this.baseUrl);
-    const payload = JSON.stringify(req);
-    return new Promise((resolve, reject) => {
-      const options = {
-        hostname: url.hostname,
-        port: url.port || 80,
-        path: url.pathname,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "text/event-stream",
-          "Content-Length": Buffer.byteLength(payload)
+  stdin;
+  stdout;
+  stderr;
+  messageId = 0;
+  pendingRequests = /* @__PURE__ */ new Map();
+  initialized = false;
+  sessionId = null;
+  onUpdates = [];
+  buffer = "";
+  constructor(stdin, stdout, stderr) {
+    this.stdin = stdin;
+    this.stdout = stdout;
+    this.stderr = stderr;
+    this.stdout.on("data", (chunk) => {
+      this.buffer += chunk.toString();
+      const lines = this.buffer.split("\n");
+      this.buffer = lines.pop() || "";
+      for (const line of lines) {
+        if (line.trim()) {
+          this.handleMessages(line);
         }
-      };
-      const httpReq = http.request(options, (res) => {
-        let buffer = "";
-        res.on("data", (chunk) => {
-          buffer += chunk.toString();
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                onEvent(JSON.parse(line.substring(6)));
-              } catch {
-              }
-            }
-          }
-        });
-        res.on("end", resolve);
-        res.on("error", reject);
-      });
-      httpReq.on("error", reject);
-      httpReq.write(payload);
-      httpReq.end();
+      }
     });
   }
-  async healthCheck() {
+  async initialize(clientInfo = { name: "trae-plugin-cc", version: "1.0.0" }) {
+    if (this.initialized) {
+      throw new Error("Already initialized");
+    }
+    const result2 = await this.request("initialize", {
+      protocolVersion: 1,
+      clientCapabilities: {},
+      clientInfo
+    });
+    this.initialized = true;
+    return result2;
+  }
+  async createSession(cwd, mcpServers = []) {
+    if (!this.initialized) {
+      throw new Error("Not initialized. Call initialize() first");
+    }
+    const result2 = await this.request("session/new", {
+      cwd,
+      mcpServers
+    });
+    this.sessionId = result2.sessionId;
+    return result2;
+  }
+  async loadSession(sessionId, cwd, mcpServers = []) {
+    if (!this.initialized) {
+      throw new Error("Not initialized. Call initialize() first");
+    }
+    await this.request("session/load", {
+      sessionId,
+      cwd,
+      mcpServers
+    });
+    this.sessionId = sessionId;
+  }
+  async sessionPrompt(prompt, onUpdate) {
+    if (!this.sessionId) {
+      throw new Error("No active session. Call createSession() or loadSession() first");
+    }
+    if (onUpdate) {
+      this.onUpdates.push(onUpdate);
+    }
     try {
-      await this.request("GET", "/agents");
-      return true;
-    } catch {
-      return false;
+      return await this.request("session/prompt", {
+        sessionId: this.sessionId,
+        prompt: [{ type: "text", text: prompt }]
+      });
+    } finally {
+      if (onUpdate) {
+        this.onUpdates = this.onUpdates.filter((fn) => fn !== onUpdate);
+      }
     }
   }
-  request(method, urlPath, body) {
-    const url = new URL(urlPath, this.baseUrl);
-    return new Promise((resolve, reject) => {
-      const options = {
-        hostname: url.hostname,
-        port: url.port || 80,
-        path: url.pathname + url.search,
-        method,
-        headers: {}
-      };
-      if (body) {
-        const payload = JSON.stringify(body);
-        options.headers = {
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(payload)
-        };
+  async sessionCancel() {
+    if (!this.sessionId) {
+      throw new Error("No active session");
+    }
+    await this.request("session/cancel", { sessionId: this.sessionId });
+  }
+  getSessionId() {
+    return this.sessionId;
+  }
+  handleMessages(line) {
+    let message;
+    try {
+      message = JSON.parse(line);
+    } catch {
+      return;
+    }
+    if (message.id !== void 0 && this.pendingRequests.has(message.id)) {
+      const pending = this.pendingRequests.get(message.id);
+      this.pendingRequests.delete(message.id);
+      if (message.error) {
+        pending.reject(new Error(message.error.message || JSON.stringify(message.error)));
+      } else {
+        pending.resolve(message.result);
       }
-      const req = http.request(options, (res) => {
-        let data = "";
-        res.on("data", (chunk) => {
-          data += chunk;
-        });
-        res.on("end", () => {
-          try {
-            resolve(JSON.parse(data));
-          } catch {
-            resolve(data);
-          }
-        });
+    } else if (message.method === "session/update" && message.params) {
+      for (const fn of this.onUpdates) {
+        fn(message.params);
+      }
+    }
+  }
+  request(method, params) {
+    const id = ++this.messageId;
+    const message = {
+      jsonrpc: "2.0",
+      id,
+      method,
+      params
+    };
+    return new Promise((resolve, reject) => {
+      this.pendingRequests.set(id, { resolve, reject });
+      this.stdin.write(JSON.stringify(message) + "\n", (err) => {
+        if (err) {
+          this.pendingRequests.delete(id);
+          reject(new Error(`Failed to write to stdin: ${err.message}`));
+        }
       });
-      req.on("error", reject);
-      if (body) req.write(JSON.stringify(body));
-      req.end();
     });
   }
 };
@@ -3234,13 +3258,11 @@ var AcpClient = class {
 var import_child_process3 = require("child_process");
 var AcpServerManager = class {
   process = null;
-  port = 0;
   client = null;
   async start(options) {
     if (this.isRunning()) {
       return {
-        port: this.port,
-        baseUrl: `http://localhost:${this.port}`
+        client: this.client
       };
     }
     return new Promise((resolve, reject) => {
@@ -3260,8 +3282,6 @@ var AcpServerManager = class {
       const outputSnippets = [];
       let started = false;
       let settled = false;
-      let firstStdoutSeen = false;
-      let firstStderrSeen = false;
       const recordEvent = (event, detail) => {
         startupEvents.push({
           at: (/* @__PURE__ */ new Date()).toISOString(),
@@ -3290,13 +3310,14 @@ ${recentOutput}`;
         settled = true;
         reject(new Error(`${message}${buildDiagnostic()}`));
       };
-      const succeed = (port) => {
+      const succeed = () => {
         if (settled) return;
         settled = true;
-        resolve({
-          port,
-          baseUrl: `http://localhost:${port}`
-        });
+        const client = new AcpClient(child.stdin, child.stdout, child.stderr);
+        this.process = child;
+        this.client = client;
+        recordEvent("stdio:ready");
+        resolve({ client });
       };
       const env = { ...process.env };
       const homeBin = require("path").join(require("os").homedir(), ".local", "bin");
@@ -3309,35 +3330,15 @@ ${recentOutput}`;
       }
       recordEvent("spawn:start", `cmd=trae-cli ${args.join(" ")}`);
       const child = (0, import_child_process3.spawn)("trae-cli", args, {
-        stdio: ["ignore", "pipe", "pipe"],
+        stdio: ["pipe", "pipe", "pipe"],
         env
       });
       recordEvent("spawn:created", `pid=${child.pid || "unknown"}`);
-      const detectPort = (text, source) => {
-        rememberOutput(source, text);
-        const portMatch = text.match(/listening.*?:(\d+)/i) || text.match(/port.*?(\d+)/i) || text.match(/http:\/\/localhost:(\d+)/i) || text.match(/:(\d{4,5})/);
-        if (portMatch && !started) {
-          started = true;
-          this.port = parseInt(portMatch[1], 10);
-          this.process = child;
-          this.client = new AcpClient(`http://localhost:${this.port}`);
-          recordEvent("port:detected", `source=${source}, port=${this.port}`);
-          succeed(this.port);
-        }
-      };
       child.stdout?.on("data", (chunk) => {
-        if (!firstStdoutSeen) {
-          firstStdoutSeen = true;
-          recordEvent("stdout:first-chunk");
-        }
-        detectPort(chunk.toString(), "stdout");
+        rememberOutput("stdout", chunk.toString());
       });
       child.stderr?.on("data", (chunk) => {
-        if (!firstStderrSeen) {
-          firstStderrSeen = true;
-          recordEvent("stderr:first-chunk");
-        }
-        detectPort(chunk.toString(), "stderr");
+        rememberOutput("stderr", chunk.toString());
       });
       child.on("error", (err) => {
         recordEvent("process:error", err.message);
@@ -3347,25 +3348,26 @@ ${recentOutput}`;
         recordEvent("process:close", `code=${code ?? "null"}, signal=${signal ?? "null"}`);
         this.process = null;
         if (!started) {
-          fail(`ACP server exited before port detected (code=${code ?? "null"}, signal=${signal ?? "null"})`);
+          fail(`ACP server exited before ready (code=${code ?? "null"}, signal=${signal ?? "null"})`);
         }
       });
       setTimeout(() => {
         if (!started && !settled) {
           const alive = child.exitCode === null;
-          recordEvent("startup:timeout", `alive=${alive}, exitCode=${child.exitCode ?? "null"}, signalCode=${child.signalCode ?? "null"}`);
+          recordEvent("startup:timeout", `alive=${alive}, exitCode=${child.exitCode ?? "null"}`);
           if (alive) {
-            child.kill("SIGTERM");
-            fail("ACP server process is alive but no port was detected within 15s");
+            started = true;
+            succeed();
             return;
           }
           fail("ACP server startup timeout (15s)");
         }
-      }, 15e3);
+      }, 5e3);
     });
   }
   async stop() {
     if (this.process) {
+      this.process.stdin?.end();
       this.process.kill("SIGTERM");
       await new Promise((resolve) => {
         setTimeout(() => {
@@ -3376,15 +3378,11 @@ ${recentOutput}`;
         }, 3e3);
       });
       this.process = null;
-      this.port = 0;
       this.client = null;
     }
   }
   isRunning() {
     return this.process !== null && this.process.exitCode === null;
-  }
-  getPort() {
-    return this.port;
   }
   getClient() {
     return this.client;
@@ -3392,8 +3390,7 @@ ${recentOutput}`;
   getStatus() {
     return {
       running: this.isRunning(),
-      port: this.port,
-      baseUrl: this.port ? `http://localhost:${this.port}` : ""
+      baseUrl: this.isRunning() ? "stdio://trae-cli" : ""
     };
   }
 };
@@ -4021,17 +4018,10 @@ function getRecentChanges() {
 }
 async function rescue(args) {
   let context = "";
-  let retries = 3;
-  let force = false;
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--context" && args[i + 1]) {
       context = args[i + 1];
       i++;
-    } else if (args[i] === "--retries" && args[i + 1]) {
-      retries = parseInt(args[i + 1]) || 3;
-      i++;
-    } else if (args[i] === "--force") {
-      force = true;
     }
   }
   console.log("\u{1F527} [Trae Plugin] Rescue Mode");
@@ -4394,14 +4384,14 @@ async function startServer(args) {
   }
   console.log("\u6B63\u5728\u542F\u52A8 ACP Server...");
   try {
-    const result2 = await serverManager.start(options);
+    await serverManager.start(options);
+    console.log("\n\u2705 ACP Server \u5DF2\u542F\u52A8");
+    console.log("  \u4F20\u8F93: STDIO JSON-RPC");
     console.log(`
-\u2705 ACP Server \u5DF2\u542F\u52A8`);
-    console.log(`  \u7AEF\u53E3: ${result2.port}`);
-    console.log(`  \u5730\u5740: ${result2.baseUrl}`);
-    console.log(`
-\u4F7F\u7528 /trae:acp agents \u67E5\u770B\u53EF\u7528 Agent`);
-    console.log(`\u4F7F\u7528 /trae:acp run "\u4EFB\u52A1" \u6267\u884C\u4EFB\u52A1`);
+\u4F7F\u7528 /trae:acp run "\u4EFB\u52A1" \u6267\u884C\u4EFB\u52A1`);
+    console.log(`\u4F7F\u7528 /trae:acp stream "\u4EFB\u52A1" \u6D41\u5F0F\u6267\u884C`);
+    await new Promise(() => {
+    });
   } catch (error) {
     console.error(`\u274C \u542F\u52A8\u5931\u8D25: ${error.message}`);
   }
@@ -4420,22 +4410,21 @@ async function serverStatus() {
   console.log("\n## ACP Server \u72B6\u6001\n");
   console.log(`  \u8FD0\u884C\u4E2D: ${status2.running ? "\u2705" : "\u274C"}`);
   if (status2.running) {
-    console.log(`  \u7AEF\u53E3: ${status2.port}`);
-    console.log(`  \u5730\u5740: ${status2.baseUrl}`);
-    const client = serverManager.getClient();
-    if (client) {
-      const healthy = await client.healthCheck();
-      console.log(`  \u5065\u5EB7\u68C0\u67E5: ${healthy ? "\u2705 \u6B63\u5E38" : "\u274C \u5F02\u5E38"}`);
-    }
+    console.log(`  \u4F20\u8F93: STDIO JSON-RPC`);
+    console.log("  \u5065\u5EB7\u68C0\u67E5: \u2705 \u6B63\u5E38");
   } else {
     console.log("\n\u4F7F\u7528 /trae:acp start \u542F\u52A8\u670D\u52A1\u5668");
   }
 }
 async function listAgents() {
-  const status2 = serverManager.getStatus();
-  if (!status2.running) {
-    console.log("ACP Server \u672A\u8FD0\u884C\u3002\u4F7F\u7528 /trae:acp start \u542F\u52A8\u3002");
-    return;
+  if (!serverManager.isRunning()) {
+    console.log("\u6B63\u5728\u542F\u52A8 ACP Server...");
+    try {
+      await serverManager.start({ yolo: true });
+    } catch (error) {
+      console.error(`\u542F\u52A8\u5931\u8D25: ${error.message}`);
+      return;
+    }
   }
   const client = serverManager.getClient();
   if (!client) {
@@ -4443,29 +4432,29 @@ async function listAgents() {
     return;
   }
   try {
-    const agents = await client.discoverAgents();
-    if (agents.length === 0) {
-      console.log("\u6CA1\u6709\u53D1\u73B0\u53EF\u7528\u7684 Agent\u3002");
-      return;
-    }
+    const initResult = await client.initialize({ name: "trae-plugin-cc", version: "1.0.0" });
     console.log(`
-## \u53D1\u73B0 ${agents.length} \u4E2A Agent
+## Agent \u4FE1\u606F
 `);
-    for (const agent of agents) {
-      console.log(`### ${agent.name}`);
-      console.log(`  \u63CF\u8FF0: ${agent.description}`);
-      if (agent.metadata) {
-        console.log(`  \u5143\u6570\u636E: ${JSON.stringify(agent.metadata)}`);
-      }
-      console.log("");
+    if (initResult.agentInfo) {
+      console.log(`  \u540D\u79F0: ${initResult.agentInfo.name}`);
+      console.log(`  \u7248\u672C: ${initResult.agentInfo.version}`);
     }
+    console.log(`  \u534F\u8BAE\u7248\u672C: ${initResult.protocolVersion}`);
+    console.log(`
+### \u80FD\u529B`);
+    console.log(`  \u52A0\u8F7D\u4F1A\u8BDD: ${initResult.agentCapabilities.loadSession ? "\u2705" : "\u274C"}`);
+    console.log(`  MCP HTTP: ${initResult.agentCapabilities.mcpCapabilities?.http ? "\u2705" : "\u274C"}`);
+    console.log(`  MCP SSE: ${initResult.agentCapabilities.mcpCapabilities?.sse ? "\u2705" : "\u274C"}`);
+    console.log(`  \u4F1A\u8BDD\u5217\u8868: ${initResult.agentCapabilities.sessionCapabilities?.list ? "\u2705" : "\u274C"}`);
   } catch (error) {
-    console.error(`\u83B7\u53D6 Agent \u5217\u8868\u5931\u8D25: ${error.message}`);
+    console.error(`\u83B7\u53D6 Agent \u4FE1\u606F\u5931\u8D25: ${error.message}`);
+  } finally {
+    await serverManager.stop();
   }
 }
 async function runViaAcp(args) {
-  const status2 = serverManager.getStatus();
-  if (!status2.running) {
+  if (!serverManager.isRunning()) {
     console.log("ACP Server \u672A\u8FD0\u884C\u3002\u6B63\u5728\u542F\u52A8...");
     try {
       await serverManager.start({ yolo: true });
@@ -4486,36 +4475,34 @@ async function runViaAcp(args) {
   }
   console.log(`\u6B63\u5728\u901A\u8FC7 ACP \u6267\u884C\u4EFB\u52A1: ${prompt.substring(0, 50)}...`);
   try {
-    const result2 = await client.runAgent({
-      agent_name: "trae-agent",
-      input: [{
-        role: "user",
-        parts: [{ content: prompt, content_type: "text/plain" }]
-      }]
+    await client.initialize({ name: "trae-plugin-cc", version: "1.0.0" });
+    const cwd = process.cwd();
+    if (!client.getSessionId()) {
+      await client.createSession(cwd, []);
+    }
+    let output = "";
+    const result2 = await client.sessionPrompt(prompt, (update) => {
+      if (update.update?.content?.text) {
+        output += update.update.content.text;
+      }
     });
     console.log("\n## \u6267\u884C\u7ED3\u679C\n");
-    console.log(`  Run ID: ${result2.run_id}`);
-    console.log(`  Session ID: ${result2.session_id}`);
-    console.log(`  \u72B6\u6001: ${result2.status}`);
-    if (result2.output && result2.output.length > 0) {
-      console.log("\n### \u8F93\u51FA\n");
-      for (const out of result2.output) {
-        for (const part of out.parts) {
-          console.log(part.content);
-        }
-      }
-    }
-    if (result2.error) {
+    if (output) {
       console.log(`
-\u274C \u9519\u8BEF: ${result2.error}`);
+### \u8F93\u51FA
+`);
+      console.log(output);
     }
+    console.log(`
+  \u505C\u6B62\u539F\u56E0: ${result2.stopReason || "completed"}`);
   } catch (error) {
     console.error(`\u6267\u884C\u5931\u8D25: ${error.message}`);
+  } finally {
+    await serverManager.stop();
   }
 }
 async function streamViaAcp(args) {
-  const status2 = serverManager.getStatus();
-  if (!status2.running) {
+  if (!serverManager.isRunning()) {
     console.log("ACP Server \u672A\u8FD0\u884C\u3002\u6B63\u5728\u542F\u52A8...");
     try {
       await serverManager.start({ yolo: true });
@@ -4537,33 +4524,22 @@ async function streamViaAcp(args) {
   console.log(`\u6B63\u5728\u901A\u8FC7 ACP \u6D41\u5F0F\u6267\u884C\u4EFB\u52A1: ${prompt.substring(0, 50)}...`);
   console.log("--- \u6D41\u5F0F\u8F93\u51FA ---\n");
   try {
-    await client.runStream(
-      {
-        agent_name: "trae-agent",
-        input: [{
-          role: "user",
-          parts: [{ content: prompt, content_type: "text/plain" }]
-        }]
-      },
-      (event) => {
-        if (event.output) {
-          for (const out of event.output) {
-            if (out.parts) {
-              for (const part of out.parts) {
-                console.log(part.content);
-              }
-            }
-          }
-        }
-        if (event.status) {
-          console.log(`[\u72B6\u6001: ${event.status}]`);
-        }
+    await client.initialize({ name: "trae-plugin-cc", version: "1.0.0" });
+    const cwd = process.cwd();
+    if (!client.getSessionId()) {
+      await client.createSession(cwd, []);
+    }
+    const result2 = await client.sessionPrompt(prompt, (update) => {
+      if (update.update?.content?.text) {
+        process.stdout.write(update.update.content.text);
       }
-    );
+    });
     console.log("\n--- \u6D41\u5F0F\u8F93\u51FA\u7ED3\u675F ---");
   } catch (error) {
     console.error(`
 \u6267\u884C\u5931\u8D25: ${error.message}`);
+  } finally {
+    await serverManager.stop();
   }
 }
 

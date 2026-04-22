@@ -9,17 +9,14 @@ type StartupEvent = {
 
 export class AcpServerManager {
   private process: ChildProcess | null = null;
-  private port: number = 0;
   private client: AcpClient | null = null;
 
   async start(options?: { yolo?: boolean; allowedTools?: string[]; disabledTools?: string[] }): Promise<{
-    port: number;
-    baseUrl: string;
+    client: AcpClient;
   }> {
     if (this.isRunning()) {
       return {
-        port: this.port,
-        baseUrl: `http://localhost:${this.port}`,
+        client: this.client!,
       };
     }
 
@@ -42,8 +39,6 @@ export class AcpServerManager {
       const outputSnippets: string[] = [];
       let started = false;
       let settled = false;
-      let firstStdoutSeen = false;
-      let firstStderrSeen = false;
 
       const recordEvent = (event: string, detail?: string) => {
         startupEvents.push({
@@ -76,16 +71,16 @@ export class AcpServerManager {
         reject(new Error(`${message}${buildDiagnostic()}`));
       };
 
-      const succeed = (port: number) => {
+    const succeed = () => {
         if (settled) return;
         settled = true;
-        resolve({
-          port,
-          baseUrl: `http://localhost:${port}`,
-        });
+        const client = new AcpClient(child.stdin!, child.stdout!, child.stderr!);
+        this.process = child;
+        this.client = client;
+        recordEvent('stdio:ready');
+        resolve({ client });
       };
 
-      // 设置环境变量，支持 PAT 认证和 trae-cli 路径
       const env: NodeJS.ProcessEnv = { ...process.env };
       const homeBin = require('path').join(require('os').homedir(), '.local', 'bin');
       const existingPath = env.PATH || '';
@@ -98,44 +93,21 @@ export class AcpServerManager {
 
       recordEvent('spawn:start', `cmd=trae-cli ${args.join(' ')}`);
 
+      // 关键修复：使用 pipe 而不是 ignore, 保持 stdin 打开
+      // ACP 协议使用 STDIO JSON-RPC, 需要 stdin 保持连接
       const child = spawn('trae-cli', args, {
-        stdio: ['ignore', 'pipe', 'pipe'],
+        stdio: ['pipe', 'pipe', 'pipe'],
         env,
       });
 
-      recordEvent('spawn:created', `pid=${child.pid || 'unknown'}`);
-
-      const detectPort = (text: string, source: 'stdout' | 'stderr') => {
-        rememberOutput(source, text);
-
-        const portMatch = text.match(/listening.*?:(\d+)/i) ||
-                          text.match(/port.*?(\d+)/i) ||
-                          text.match(/http:\/\/localhost:(\d+)/i) ||
-                          text.match(/:(\d{4,5})/);
-        if (portMatch && !started) {
-          started = true;
-          this.port = parseInt(portMatch[1], 10);
-          this.process = child;
-          this.client = new AcpClient(`http://localhost:${this.port}`);
-          recordEvent('port:detected', `source=${source}, port=${this.port}`);
-          succeed(this.port);
-        }
-      };
+recordEvent('spawn:created', `pid=${child.pid || 'unknown'}`);
 
       child.stdout?.on('data', (chunk: Buffer) => {
-        if (!firstStdoutSeen) {
-          firstStdoutSeen = true;
-          recordEvent('stdout:first-chunk');
-        }
-        detectPort(chunk.toString(), 'stdout');
+        rememberOutput('stdout', chunk.toString());
       });
 
       child.stderr?.on('data', (chunk: Buffer) => {
-        if (!firstStderrSeen) {
-          firstStderrSeen = true;
-          recordEvent('stderr:first-chunk');
-        }
-        detectPort(chunk.toString(), 'stderr');
+        rememberOutput('stderr', chunk.toString());
       });
 
       child.on('error', (err) => {
@@ -147,29 +119,32 @@ export class AcpServerManager {
         recordEvent('process:close', `code=${code ?? 'null'}, signal=${signal ?? 'null'}`);
         this.process = null;
         if (!started) {
-          fail(`ACP server exited before port detected (code=${code ?? 'null'}, signal=${signal ?? 'null'})`);
+          fail(`ACP server exited before ready (code=${code ?? 'null'}, signal=${signal ?? 'null'})`);
         }
       });
 
+      // 等待进程启动
+      // trae-cli 认证成功后会通过 stderr 输出日志
       setTimeout(() => {
         if (!started && !settled) {
           const alive = child.exitCode === null;
-          recordEvent('startup:timeout', `alive=${alive}, exitCode=${child.exitCode ?? 'null'}, signalCode=${child.signalCode ?? 'null'}`);
+          recordEvent('startup:timeout', `alive=${alive}, exitCode=${child.exitCode ?? 'null'}`);
 
           if (alive) {
-            child.kill('SIGTERM');
-            fail('ACP server process is alive but no port was detected within 15s');
+            started = true;
+            succeed();
             return;
           }
 
           fail('ACP server startup timeout (15s)');
         }
-      }, 15000);
+      }, 5000);
     });
   }
 
   async stop(): Promise<void> {
     if (this.process) {
+      this.process.stdin?.end();
       this.process.kill('SIGTERM');
       await new Promise<void>((resolve) => {
         setTimeout(() => {
@@ -180,7 +155,6 @@ export class AcpServerManager {
         }, 3000);
       });
       this.process = null;
-      this.port = 0;
       this.client = null;
     }
   }
@@ -189,23 +163,17 @@ export class AcpServerManager {
     return this.process !== null && this.process.exitCode === null;
   }
 
-  getPort(): number {
-    return this.port;
-  }
-
   getClient(): AcpClient | null {
     return this.client;
   }
 
   getStatus(): {
     running: boolean;
-    port: number;
     baseUrl: string;
   } {
     return {
       running: this.isRunning(),
-      port: this.port,
-      baseUrl: this.port ? `http://localhost:${this.port}` : '',
+      baseUrl: this.isRunning() ? 'stdio://trae-cli' : '',
     };
   }
 }

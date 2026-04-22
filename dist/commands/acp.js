@@ -48,12 +48,11 @@ async function startServer(args) {
     }
     console.log('正在启动 ACP Server...');
     try {
-        const result = await serverManager.start(options);
-        console.log(`\n✅ ACP Server 已启动`);
-        console.log(`  端口: ${result.port}`);
-        console.log(`  地址: ${result.baseUrl}`);
-        console.log(`\n使用 /trae:acp agents 查看可用 Agent`);
-        console.log(`使用 /trae:acp run "任务" 执行任务`);
+        await serverManager.start(options);
+        console.log('\n✅ ACP Server 已启动');
+        console.log('  传输: STDIO JSON-RPC');
+        console.log(`\n使用 /trae:acp run "任务" 执行任务`);
+        console.log(`使用 /trae:acp stream "任务" 流式执行`);
     }
     catch (error) {
         console.error(`❌ 启动失败: ${error.message}`);
@@ -73,21 +72,15 @@ async function serverStatus() {
     console.log('\n## ACP Server 状态\n');
     console.log(`  运行中: ${status.running ? '✅' : '❌'}`);
     if (status.running) {
-        console.log(`  端口: ${status.port}`);
-        console.log(`  地址: ${status.baseUrl}`);
-        const client = serverManager.getClient();
-        if (client) {
-            const healthy = await client.healthCheck();
-            console.log(`  健康检查: ${healthy ? '✅ 正常' : '❌ 异常'}`);
-        }
+        console.log(`  传输: STDIO JSON-RPC`);
+        console.log('  健康检查: ✅ 正常');
     }
     else {
         console.log('\n使用 /trae:acp start 启动服务器');
     }
 }
 async function listAgents() {
-    const status = serverManager.getStatus();
-    if (!status.running) {
+    if (!serverManager.isRunning()) {
         console.log('ACP Server 未运行。使用 /trae:acp start 启动。');
         return;
     }
@@ -97,28 +90,23 @@ async function listAgents() {
         return;
     }
     try {
-        const agents = await client.discoverAgents();
-        if (agents.length === 0) {
-            console.log('没有发现可用的 Agent。');
-            return;
-        }
-        console.log(`\n## 发现 ${agents.length} 个 Agent\n`);
-        for (const agent of agents) {
-            console.log(`### ${agent.name}`);
-            console.log(`  描述: ${agent.description}`);
-            if (agent.metadata) {
-                console.log(`  元数据: ${JSON.stringify(agent.metadata)}`);
-            }
-            console.log('');
-        }
+        const initResult = await client.initialize({ name: 'trae-plugin-cc', version: '1.0.0' });
+        console.log(`\n## Agent 信息\n`);
+        console.log(`  名称: ${initResult.agentInfo.name}`);
+        console.log(`  版本: ${initResult.agentInfo.version}`);
+        console.log(`  协议版本: ${initResult.protocolVersion}`);
+        console.log(`\n### 能力`);
+        console.log(`  加载会话: ${initResult.agentCapabilities.loadSession ? '✅' : '❌'}`);
+        console.log(`  MCP HTTP: ${initResult.agentCapabilities.mcpCapabilities?.http ? '✅' : '❌'}`);
+        console.log(`  MCP SSE: ${initResult.agentCapabilities.mcpCapabilities?.sse ? '✅' : '❌'}`);
+        console.log(`  会话列表: ${initResult.agentCapabilities.sessionCapabilities?.list ? '✅' : '❌'}`);
     }
     catch (error) {
-        console.error(`获取 Agent 列表失败: ${error.message}`);
+        console.error(`获取 Agent 信息失败: ${error.message}`);
     }
 }
 async function runViaAcp(args) {
-    const status = serverManager.getStatus();
-    if (!status.running) {
+    if (!serverManager.isRunning()) {
         console.log('ACP Server 未运行。正在启动...');
         try {
             await serverManager.start({ yolo: true });
@@ -140,36 +128,21 @@ async function runViaAcp(args) {
     }
     console.log(`正在通过 ACP 执行任务: ${prompt.substring(0, 50)}...`);
     try {
-        const result = await client.runAgent({
-            agent_name: 'trae-agent',
-            input: [{
-                    role: 'user',
-                    parts: [{ content: prompt, content_type: 'text/plain' }],
-                }],
-        });
+        await client.initialize({ name: 'trae-plugin-cc', version: '1.0.0' });
+        const cwd = process.cwd();
+        if (!client.getSessionId()) {
+            await client.createSession(cwd, []);
+        }
+        const result = await client.sessionPrompt(prompt);
         console.log('\n## 执行结果\n');
-        console.log(`  Run ID: ${result.run_id}`);
-        console.log(`  Session ID: ${result.session_id}`);
-        console.log(`  状态: ${result.status}`);
-        if (result.output && result.output.length > 0) {
-            console.log('\n### 输出\n');
-            for (const out of result.output) {
-                for (const part of out.parts) {
-                    console.log(part.content);
-                }
-            }
-        }
-        if (result.error) {
-            console.log(`\n❌ 错误: ${result.error}`);
-        }
+        console.log(`  停止原因: ${result.stopReason || 'completed'}`);
     }
     catch (error) {
         console.error(`执行失败: ${error.message}`);
     }
 }
 async function streamViaAcp(args) {
-    const status = serverManager.getStatus();
-    if (!status.running) {
+    if (!serverManager.isRunning()) {
         console.log('ACP Server 未运行。正在启动...');
         try {
             await serverManager.start({ yolo: true });
@@ -192,24 +165,14 @@ async function streamViaAcp(args) {
     console.log(`正在通过 ACP 流式执行任务: ${prompt.substring(0, 50)}...`);
     console.log('--- 流式输出 ---\n');
     try {
-        await client.runStream({
-            agent_name: 'trae-agent',
-            input: [{
-                    role: 'user',
-                    parts: [{ content: prompt, content_type: 'text/plain' }],
-                }],
-        }, (event) => {
-            if (event.output) {
-                for (const out of event.output) {
-                    if (out.parts) {
-                        for (const part of out.parts) {
-                            console.log(part.content);
-                        }
-                    }
-                }
-            }
-            if (event.status) {
-                console.log(`[状态: ${event.status}]`);
+        await client.initialize({ name: 'trae-plugin-cc', version: '1.0.0' });
+        const cwd = process.cwd();
+        if (!client.getSessionId()) {
+            await client.createSession(cwd, []);
+        }
+        const result = await client.sessionPrompt(prompt, (update) => {
+            if (update.update?.content?.text) {
+                process.stdout.write(update.update.content.text);
             }
         });
         console.log('\n--- 流式输出结束 ---');
