@@ -1,0 +1,53 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "0c8c39d7dfb4",
+  "session_id": "ses_24c5c8f6cffewxw3j2HN1joKjV",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-22T11:12:29.560622Z",
+  "branch": "e2e-review-test",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "src/utils.ts"
+  ],
+  "agent": "OpenCode",
+  "model": "Qwen3.6-Plus",
+  "turn_id": "cb0b01e403bd",
+  "checkpoint_transcript_start": 134,
+  "transcript_lines_at_start": 134,
+  "token_usage": {
+    "input_tokens": 2820057,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 1285,
+    "api_call_count": 18
+  },
+  "session_metrics": {
+    "turn_count": 5
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-22T11:12:29.539737Z",
+    "agent_lines": 1,
+    "agent_removed": 1,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1,
+    "total_lines_changed": 2,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 66,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".codex/agents/entire-search.toml": 23,
+        ".codex/config.toml": 3,
+        ".codex/hooks.json": 40
+      }
+    }
+  ]
+}
