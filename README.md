@@ -1,6 +1,6 @@
 # trae-plugin-cc
 
-A **dual-platform** plugin that bridges [**Claude Code**](https://claude.ai/code) and [**OpenCode**](https://opencode.ai) with ByteDance [**Trae Agent**](https://docs.trae.cn/cli) (`trae-cli`). Delegate natural language tasks, run code reviews, manage sessions, and enable Agent-to-Agent communication — all inheriting trae-cli's OAuth2 auth (no extra API keys needed).
+The plugin bridges [**Claude Code**](https://claude.ai/code) and [**OpenCode**](https://opencode.ai) with ByteDance [**Trae Agent**](https://docs.trae.cn/cli) (`trae-cli`). Delegate natural language tasks, run code reviews, manage sessions, and enable Agent-to-Agent communication — all inheriting trae-cli's OAuth2 auth (no extra API keys needed).
 
 ## Features
 
