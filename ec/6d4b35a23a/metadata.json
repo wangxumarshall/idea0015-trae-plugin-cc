@@ -3,7 +3,7 @@
   "checkpoint_id": "ec6d4b35a23a",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 5,
+  "checkpoints_count": 6,
   "files_touched": [
     ".opencode/tools/trae-cancel.ts",
     ".opencode/tools/trae-rescue.ts",
@@ -41,13 +41,19 @@
       "transcript": "/ec/6d4b35a23a/2/full.jsonl",
       "content_hash": "/ec/6d4b35a23a/2/content_hash.txt",
       "prompt": "/ec/6d4b35a23a/2/prompt.txt"
+    },
+    {
+      "metadata": "/ec/6d4b35a23a/3/metadata.json",
+      "transcript": "/ec/6d4b35a23a/3/full.jsonl",
+      "content_hash": "/ec/6d4b35a23a/3/content_hash.txt",
+      "prompt": "/ec/6d4b35a23a/3/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 11083944,
+    "input_tokens": 22425710,
     "cache_creation_tokens": 0,
     "cache_read_tokens": 0,
-    "output_tokens": 32759,
-    "api_call_count": 151
+    "output_tokens": 57357,
+    "api_call_count": 261
   }
 }
