@@ -1,0 +1,55 @@
+站在opencode用户使用trae-plugin-cc的视角，应该如何在opencode中如何使用
+
+---
+
+Execute the task by running the trae-plugin-cc CLI:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/dist/index.js" run "1+1"
+```
+
+If the user provides no arguments, show usage:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/dist/index.js" run
+```
+
+Usage examples:
+- `task "refactor the user module"`
+- `task "fix the login bug" --yolo`
+- `task "generate project docs" --background`
+- `task "analyze the codebase" --json`
+- `task "continue" --resume`
+- `task "continue" --resume 0d3cbdc3-e365-468e-982c-fb3d5849f5cc`
+- `task "experimental changes" --worktree`
+- `task "run script" --allowed-tool Bash --allowed-tool Edit`
+- `task "continue optimization" --inject-context abc123`
+
+---
+
+Execute the task by running the trae-plugin-cc CLI:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/dist/index.js" run "2+1"
+```
+
+If the user provides no arguments, show usage:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/dist/index.js" run
+```
+
+Usage examples:
+- `task "refactor the user module"`
+- `task "fix the login bug" --yolo`
+- `task "generate project docs" --background`
+- `task "analyze the codebase" --json`
+- `task "continue" --resume`
+- `task "continue" --resume 0d3cbdc3-e365-468e-982c-fb3d5849f5cc`
+- `task "experimental changes" --worktree`
+- `task "run script" --allowed-tool Bash --allowed-tool Edit`
+- `task "continue optimization" --inject-context abc123`
+
+---
+
+按照用户实际使用的视角，更新 readme中的commands reference章节中opencode的使用命令
