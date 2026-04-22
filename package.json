@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wangxumarshall/trae-plugin-cc.git"
+    "url": "git+https://github.com/wangxumarshall/idea0015-trae-plugin-cc.git"
   },
   "keywords": [
     "claude",
@@ -26,9 +26,9 @@
   "author": "wangxumarshall",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/wangxumarshall/trae-plugin-cc/issues"
+    "url": "https://github.com/wangxumarshall/idea0015-trae-plugin-cc/issues"
   },
-  "homepage": "https://github.com/wangxumarshall/trae-plugin-cc#readme",
+  "homepage": "https://github.com/wangxumarshall/idea0015-trae-plugin-cc#readme",
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",

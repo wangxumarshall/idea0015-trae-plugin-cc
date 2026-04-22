@@ -63,7 +63,7 @@ cat ~/.trae/trae_cli.yaml
 **Option 1: Marketplace (recommended)**
 
 ```bash
-claude plugin marketplace add https://github.com/wangxumarshall/trae-plugin-cc
+claude plugin marketplace add https://github.com/wangxumarshall/idea0015-trae-plugin-cc
 claude plugin install trae
 claude plugin list | grep trae
 ```
@@ -73,8 +73,8 @@ Scope: `--scope user` (global) | `--scope project` (current project) | `--scope 
 **Option 2: Local directory**
 
 ```bash
-git clone https://github.com/wangxumarshall/trae-plugin-cc.git
-cd trae-plugin-cc
+git clone https://github.com/wangxumarshall/idea0015-trae-plugin-cc.git
+cd idea0015-trae-plugin-cc
 npm install   # ⚡ auto-builds dist/ via postinstall
 claude plugin marketplace add "$(pwd)"
 claude plugin install trae
@@ -83,8 +83,8 @@ claude plugin install trae
 ### OpenCode
 
 ```bash
-git clone https://github.com/wangxumarshall/trae-plugin-cc.git
-cd trae-plugin-cc
+git clone https://github.com/wangxumarshall/idea0015-trae-plugin-cc.git
+cd idea0015-trae-plugin-cc
 npm install   # ⚡ auto-builds dist/ via postinstall
 cd .opencode && npm install && cd ..
 ```
