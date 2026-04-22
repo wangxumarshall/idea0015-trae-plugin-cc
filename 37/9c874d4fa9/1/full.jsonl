@@ -13,7 +13,7 @@
     },
     "time": {
       "created": 1776860930271,
-      "updated": 1776861558792
+      "updated": 1776861601729
     }
   },
   "messages": [
@@ -966,9 +966,9 @@
           "diffs": [
             {
               "file": "README.md",
-              "patch": "Index: README.md\n===================================================================\n--- README.md\t\n+++ README.md\t\n@@ -1,352 +1,348 @@\n # trae-plugin-cc\n \n A **dual-platform** plugin that bridges [**Claude Code**](https://claude.ai/code) and [**OpenCode**](https://opencode.ai) with ByteDance [**Trae Agent**](https://docs.trae.cn/cli) (`trae-cli`). Delegate natural language tasks, run code reviews, manage sessions, and enable Agent-to-Agent communication — all inheriting trae-cli's OAuth2 auth (no extra API keys needed).\n \n ## Features\n \n | Feature | Description |\n |---------|-------------|\n | **Task Delegation** | Send natural language prompts to Trae Agent with YOLO mode, session resume, git worktree isolation, and fine-grained tool permissions |\n | **Code Review** | Automatic git diff + professional review — standard or adversarial (extremely strict), with smart base branch detection and change-size estimation |\n | **Session Management** | Query trae-cli's history: conversations, tool calls, context summaries, topic search, and bulk cleanup |\n | **ACP Protocol** | JSON-RPC over STDIO for inter-agent communication (start/stop servers, discover agents, execute/stream tasks) |\n | **Background Tasks** | Long-running tasks with PID tracking, status listing, result retrieval, and cancellation |\n | **Lifecycle Hooks** | Auto-triggered on session start/end/stop: env checks, background task reminders, uncommitted-change gates |\n \n ## Architecture\n \n ```\n ┌─────────────────────────────────────────────────────────────────┐\n │                        trae-plugin-cc                             │\n │                                                                    │\n │  ┌──────────────────────┐          ┌──────────────────────────┐   │\n │  │    Claude Code       │          │       OpenCode           │   │\n │  ├──────────────────────┤          ├──────────────────────────┤   │\n-│  │ 10 Slash Commands    │          │ 9  Bun Tools (.ts)       │   │\n-│  │ 4  MCP Tools (.json) │          │ 10 Command Docs (.md)    │   │\n+│  │ 10 Slash Commands    │          │ 10 Commands (/trae:*)    │   │\n+│  │ 4  MCP Tools (.json) │          │ 9  Bun Tools (.ts)       │   │\n │  │ 4  Lifecycle Hooks   │          │ Event Hooks (.ts)        │   │\n │  └──────────┬───────────┘          └──────────┬───────────────┘   │\n │             │                                  │                    │\n │  ┌──────────▼──────────────────────────────────▼───────────────┐   │\n │  │              Core CLI (src/ → dist/index.js)                 │   │\n │  │  setup | run | review | adversarial-review | sessions |      │   │\n │  │  acp | status | result | cancel | rescue | hooks            │   │\n │  └──────────────────────────┬──────────────────────────────────┘   │\n │                             │                                       │\n │                    ┌─────────▼──────────┐                          │\n │                    │    trae-cli        │                          │\n │                    │  (OAuth2 inherit)  │                          │\n │                    └────────────────────┘                          │\n └─────────────────────────────────────────────────────────────────┘\n ```\n \n-Both platforms share the same core CLI (`dist/index.js`). Claude Code invokes via slash commands/MCP/hooks; OpenCode invokes via Bun tools that `spawn(\"node\", [dist/index.js, ...])`.\n+Both platforms share the same core CLI (`dist/index.js`) with unified `/trae:*` command interface. Claude Code additionally supports MCP tools for AI-autonomous invocation.\n \n ## Prerequisites\n \n - **Node.js 18+** (runtime)\n - **trae-cli** installed and authenticated\n \n ```bash\n # Verify trae-cli\n trae-cli --help\n \n # Verify auth (should show model + login URL)\n cat ~/.trae/trae_cli.yaml\n ```\n \n ## Installation\n \n ### Claude Code\n \n **Option 1: Marketplace (recommended)**\n \n ```bash\n claude plugin marketplace add https://github.com/wangxumarshall/trae-plugin-cc\n claude plugin install trae\n claude plugin list | grep trae\n ```\n \n Scope: `--scope user` (global) | `--scope project` (current project) | `--scope local` (current session)\n \n **Option 2: Local directory**\n \n ```bash\n git clone https://github.com/wangxumarshall/trae-plugin-cc.git\n cd trae-plugin-cc && npm install && npm run build\n claude plugin marketplace add \"$(pwd)\"\n claude plugin install trae\n ```\n \n ### OpenCode\n \n ```bash\n git clone https://github.com/wangxumarshall/trae-plugin-cc.git\n cd trae-plugin-cc && npm install && npm run build\n cd .opencode && npm install && cd ..\n ```\n \n OpenCode auto-discovers tools in `.opencode/tools/` and commands in `.opencode/commands/`.\n \n ### Verify Installation\n \n ```bash\n node dist/index.js setup\n ```\n \n Expected output:\n ```\n ✅ trae-cli 已安装并可用！\n \n ## 认证状态\n   已认证: ✅\n   模型: GLM-5\n   登录地址: https://console.enterprise.trae.cn\n ```\n \n ## Quick Start\n \n-### Claude Code (slash commands)\n+Both Claude Code and OpenCode support the same `/trae:*` command interface:\n \n ```\n /trae:run \"重构用户认证模块\"           # execute task\n /trae:run \"修复登录bug\" --yolo         # skip tool confirmations\n /trae:review                           # standard review\n /trae:adversarial-review               # adversarial review\n /trae:sessions list                    # list sessions\n /trae:acp run \"分析代码质量\"            # execute via ACP\n ```\n \n-### OpenCode (Bun tools)\n+> **Note**: Claude Code additionally registers 4 MCP tools (`trae_run`, `trae_review`, `trae_sessions`, `trae_acp`) for AI-autonomous invocation beyond what the user can trigger manually.\n \n-OpenCode Agent calls tools directly: `trae-run`, `trae-review`, `trae-sessions`, `trae-acp`, etc. See [Commands Reference](#commands-reference) for full parameter details.\n-\n ## Commands Reference\n \n-All CLI commands: `node dist/index.js <command> [args]`\n+All commands are invoked as `/trae:<command> [args]` in both Claude Code and OpenCode.\n \n ### `setup`\n \n Verify trae-cli installation and auth status.\n \n ```bash\n-/trae:setup          # Claude Code\n-# OpenCode: trae-setup tool (no args)\n+/trae:setup\n ```\n \n ---\n \n ### `run \"prompt\"`\n \n Delegate a natural language task to Trae Agent.\n \n ```bash\n /trae:run \"描述任务\" [options]\n ```\n \n | Option | Alias | Description |\n |--------|-------|-------------|\n | `--background` | | Run in background (returns job ID) |\n | `--json` | | Structured JSON output with `session_id` |\n | `--yolo` | `-y` | Skip tool permission confirmations |\n | `--resume [ID]` | | Resume session (omit ID = auto-resume latest) |\n | `--session-id <id>` | | Specify new session ID |\n | `--worktree [name]` | `-w` | Isolated git worktree (omit name = `__auto__`) |\n | `--allowed-tool <n>` | | Auto-approve tool (repeatable) |\n | `--disallowed-tool <n>` | | Auto-reject tool (repeatable) |\n | `--query-timeout <d>` | | Per-query timeout (e.g. `30s`, `5m`) |\n | `--bash-tool-timeout <d>` | | Bash tool timeout |\n | `-c <k=v>` | | Config override (repeatable) |\n | `--inject-context <id>` | | Inject another session's context |\n \n **Examples:**\n ```bash\n /trae:run \"重构认证模块\" --background --json\n /trae:run \"继续\" --resume --yolo\n /trae:run \"修复 bug\" --worktree --allowed-tool Edit --allowed-tool Bash\n ```\n \n ---\n \n ### `review` / `adversarial-review`\n \n Code review with automatic git diff.\n \n ```bash\n /trae:review [options]                   # standard\n /trae:adversarial-review [options]       # adversarial (strict)\n-# OpenCode: trae-review tool with adversarial: true/false\n ```\n \n | Option | Alias | Description |\n |--------|-------|-------------|\n | `--base <branch>` | | Base branch (auto-detected: main/master/develop) |\n | `--background` | | Run in background (recommended for large diffs) |\n | `--yolo` | `-y` | Skip tool confirmations |\n | `--json` | | Structured JSON output |\n | `--session-id <id>` | | Specify session ID |\n \n Auto-detects base branch and estimates review size, recommending background mode for large changes.\n \n ---\n \n ### `sessions <action>`\n \n Manage trae-cli's historical sessions (reads from file cache directly — no HTTP calls).\n \n ```bash\n /trae:sessions <action> [options]\n ```\n \n | Action | Args | Options | Description |\n |--------|------|---------|-------------|\n | `list` | | `--cwd`, `--limit` (default 20) | List all sessions |\n | `recent` | | `--cwd` | Most recent session for cwd |\n | `detail <id>` | `<session-id>` | | Session metadata + event counts |\n | `conversation <id>` | `<session-id>` | `--limit` (default 50) | Conversation messages |\n | `tools <id>` | `<session-id>` | | Tool call stats + records (up to 30) |\n | `context <id>` | `<session-id>` | | Full context summary |\n | `find <topic>` | `<topic>` | | Search by keyword |\n | `delete <id>` | `<session-id>` | | Delete a session |\n | `delete-smoke` | | | Bulk delete sessions with \"smoke\" in ID/title |\n \n ---\n \n ### `acp <action>`\n \n ACP protocol: **JSON-RPC over STDIO** (not HTTP). Enables Agent-to-Agent communication.\n \n ```bash\n /trae:acp <action> [options]\n ```\n \n | Action | Args | Description |\n |--------|------|-------------|\n | `start` | `--yolo`, `--allowed-tool`, `--disabled-tool` | Start ACP Server (blocks, keeps STDIO pipe open) |\n | `stop` | | Stop ACP Server |\n | `status` | | Check server status |\n | `agents` | | Discover available agents (auto-starts server if needed) |\n | `run <prompt>` | `<prompt>` | Execute task via ACP (auto-starts server) |\n | `stream <prompt>` | `<prompt>` | Stream task output in real-time (auto-starts server) |\n \n > **Note**: `acp start` is a blocking call — it holds the process alive for the STDIO pipe. Use `agents`, `run`, or `stream` for interactive use (they auto-start the server).\n \n ---\n \n ### `status`\n \n List all background tasks (reads `.claude-trae-plugin/` for PID files).\n \n ```bash\n /trae:status\n ```\n \n ---\n \n ### `result <task-id>`\n \n Get output of a background task.\n \n ```bash\n /trae:result <task-id>\n ```\n \n ---\n \n ### `cancel <task-id>`\n \n Force-kill a background task (SIGKILL).\n \n ```bash\n /trae:cancel <task-id>\n ```\n \n ---\n \n ### `rescue`\n \n Diagnose recent task failures, collect error logs and git status.\n \n ```bash\n /trae:rescue [--context text]\n ```\n \n | Option | Description |\n |--------|-------------|\n | `--context <text>` | Additional context for diagnosis |\n \n ---\n \n ### Lifecycle Hooks\n \n Auto-triggered — no manual invocation needed.\n \n | Hook | Trigger | Behavior |\n |------|---------|----------|\n | `SessionStart` | Claude Code startup / OpenCode session.created | Check trae-cli, remind background tasks |\n | `SessionEnd` | Claude Code exit / OpenCode session.deleted | Clean old logs, remind running tasks |\n | `Stop` | User stops operation | Gate on uncommitted changes |\n | `PostToolUse` | After `/trae:review` | Log review results |\n \n ---\n \n ### `hooks <type>` (internal)\n \n Internal hook handler — invoked by lifecycle scripts, not users.\n \n ```bash\n trae-plugin-cc hooks session-start|session-end|stop-gate\n ```\n \n ## Project Structure\n \n ```\n trae-plugin-cc/\n ├── .claude-plugin/          # Claude Code plugin + marketplace manifest\n ├── commands/                # Slash command docs (*.md)\n ├── .mcp.json                # 4 MCP tool definitions\n ├── hooks/hooks.json         # Claude Code lifecycle hooks\n ├── scripts/                 # Hook scripts (*.mjs)\n ├── src/                     # Core CLI (TypeScript → dist/index.js)\n │   ├── index.ts             # Entrypoint\n │   ├── commands/            # Command handlers\n │   └── utils/               # TraeExecutor, SessionReader, AuthBridge, AcpClient...\n ├── .opencode/               # OpenCode integration\n │   ├── tools/               # 9 Bun tools (*.ts)\n │   ├── commands/            # 10 command docs (*.md)\n │   ├── plugins/             # Event hooks\n │   └── package.json         # OpenCode deps (@opencode-ai/plugin)\n └── tests/                   # Jest tests\n ```\n \n ## Development\n \n ```bash\n npm run build          # esbuild → dist/index.js (run after ANY src/ change)\n npm test               # jest (all tests)\n cd .opencode && npm install && cd ..   # OpenCode deps (once)\n ```\n \n ### ⚠️ Build Rule\n \n `npm run build` uses **esbuild** (bundled single file with shebang) — this is the **production entrypoint**. `npm run build:tsc` produces separate `.js` files for module imports but is not used at runtime.\n \n | Command | Output | Used By |\n |---------|--------|---------|\n | `npm run build` | `dist/index.js` (bundled) | **Runtime CLI** |\n | `npm run build:tsc` | `dist/**/*.js` (separate) | Direct module imports |\n \n **Always run `npm run build` after modifying `src/` before testing.** This applies to OpenCode too — its tools spawn `dist/index.js`.\n \n ## Session Cache Paths\n \n trae-cli stores sessions on disk (read directly by this plugin):\n \n | Platform | Path |\n |----------|------|\n | macOS | `~/Library/Caches/trae_cli/sessions/` |\n | Linux | `~/.cache/trae_cli/sessions/` |\n \n ## License\n \n MIT\n",
-              "additions": 7,
-              "deletions": 11,
+              "patch": "Index: README.md\n===================================================================\n--- README.md\t\n+++ README.md\t\n@@ -1,352 +1,348 @@\n # trae-plugin-cc\n \n-A **dual-platform** plugin that bridges [**Claude Code**](https://claude.ai/code) and [**OpenCode**](https://opencode.ai) with ByteDance [**Trae Agent**](https://docs.trae.cn/cli) (`trae-cli`). Delegate natural language tasks, run code reviews, manage sessions, and enable Agent-to-Agent communication — all inheriting trae-cli's OAuth2 auth (no extra API keys needed).\n+The plugin bridges [**Claude Code**](https://claude.ai/code) and [**OpenCode**](https://opencode.ai) with ByteDance [**Trae Agent**](https://docs.trae.cn/cli) (`trae-cli`). Delegate natural language tasks, run code reviews, manage sessions, and enable Agent-to-Agent communication — all inheriting trae-cli's OAuth2 auth (no extra API keys needed).\n \n ## Features\n \n | Feature | Description |\n |---------|-------------|\n | **Task Delegation** | Send natural language prompts to Trae Agent with YOLO mode, session resume, git worktree isolation, and fine-grained tool permissions |\n | **Code Review** | Automatic git diff + professional review — standard or adversarial (extremely strict), with smart base branch detection and change-size estimation |\n | **Session Management** | Query trae-cli's history: conversations, tool calls, context summaries, topic search, and bulk cleanup |\n | **ACP Protocol** | JSON-RPC over STDIO for inter-agent communication (start/stop servers, discover agents, execute/stream tasks) |\n | **Background Tasks** | Long-running tasks with PID tracking, status listing, result retrieval, and cancellation |\n | **Lifecycle Hooks** | Auto-triggered on session start/end/stop: env checks, background task reminders, uncommitted-change gates |\n \n ## Architecture\n \n ```\n ┌─────────────────────────────────────────────────────────────────┐\n │                        trae-plugin-cc                             │\n │                                                                    │\n │  ┌──────────────────────┐          ┌──────────────────────────┐   │\n │  │    Claude Code       │          │       OpenCode           │   │\n │  ├──────────────────────┤          ├──────────────────────────┤   │\n-│  │ 10 Slash Commands    │          │ 9  Bun Tools (.ts)       │   │\n-│  │ 4  MCP Tools (.json) │          │ 10 Command Docs (.md)    │   │\n+│  │ 10 Slash Commands    │          │ 10 Commands (/trae:*)    │   │\n+│  │ 4  MCP Tools (.json) │          │ 9  Bun Tools (.ts)       │   │\n │  │ 4  Lifecycle Hooks   │          │ Event Hooks (.ts)        │   │\n │  └──────────┬───────────┘          └──────────┬───────────────┘   │\n │             │                                  │                    │\n │  ┌──────────▼──────────────────────────────────▼───────────────┐   │\n │  │              Core CLI (src/ → dist/index.js)                 │   │\n │  │  setup | run | review | adversarial-review | sessions |      │   │\n │  │  acp | status | result | cancel | rescue | hooks            │   │\n │  └──────────────────────────┬──────────────────────────────────┘   │\n │                             │                                       │\n │                    ┌─────────▼──────────┐                          │\n │                    │    trae-cli        │                          │\n │                    │  (OAuth2 inherit)  │                          │\n │                    └────────────────────┘                          │\n └─────────────────────────────────────────────────────────────────┘\n ```\n \n-Both platforms share the same core CLI (`dist/index.js`). Claude Code invokes via slash commands/MCP/hooks; OpenCode invokes via Bun tools that `spawn(\"node\", [dist/index.js, ...])`.\n+Both platforms share the same core CLI (`dist/index.js`) with unified `/trae:*` command interface. Claude Code additionally supports MCP tools for AI-autonomous invocation.\n \n ## Prerequisites\n \n - **Node.js 18+** (runtime)\n - **trae-cli** installed and authenticated\n \n ```bash\n # Verify trae-cli\n trae-cli --help\n \n # Verify auth (should show model + login URL)\n cat ~/.trae/trae_cli.yaml\n ```\n \n ## Installation\n \n ### Claude Code\n \n **Option 1: Marketplace (recommended)**\n \n ```bash\n claude plugin marketplace add https://github.com/wangxumarshall/trae-plugin-cc\n claude plugin install trae\n claude plugin list | grep trae\n ```\n \n Scope: `--scope user` (global) | `--scope project` (current project) | `--scope local` (current session)\n \n **Option 2: Local directory**\n \n ```bash\n git clone https://github.com/wangxumarshall/trae-plugin-cc.git\n cd trae-plugin-cc && npm install && npm run build\n claude plugin marketplace add \"$(pwd)\"\n claude plugin install trae\n ```\n \n ### OpenCode\n \n ```bash\n git clone https://github.com/wangxumarshall/trae-plugin-cc.git\n cd trae-plugin-cc && npm install && npm run build\n cd .opencode && npm install && cd ..\n ```\n \n OpenCode auto-discovers tools in `.opencode/tools/` and commands in `.opencode/commands/`.\n \n ### Verify Installation\n \n ```bash\n node dist/index.js setup\n ```\n \n Expected output:\n ```\n ✅ trae-cli 已安装并可用！\n \n ## 认证状态\n   已认证: ✅\n   模型: GLM-5\n   登录地址: https://console.enterprise.trae.cn\n ```\n \n ## Quick Start\n \n-### Claude Code (slash commands)\n+Both Claude Code and OpenCode support the same `/trae:*` command interface:\n \n ```\n /trae:run \"重构用户认证模块\"           # execute task\n /trae:run \"修复登录bug\" --yolo         # skip tool confirmations\n /trae:review                           # standard review\n /trae:adversarial-review               # adversarial review\n /trae:sessions list                    # list sessions\n /trae:acp run \"分析代码质量\"            # execute via ACP\n ```\n \n-### OpenCode (Bun tools)\n+> **Note**: Claude Code additionally registers 4 MCP tools (`trae_run`, `trae_review`, `trae_sessions`, `trae_acp`) for AI-autonomous invocation beyond what the user can trigger manually.\n \n-OpenCode Agent calls tools directly: `trae-run`, `trae-review`, `trae-sessions`, `trae-acp`, etc. See [Commands Reference](#commands-reference) for full parameter details.\n-\n ## Commands Reference\n \n-All CLI commands: `node dist/index.js <command> [args]`\n+All commands are invoked as `/trae:<command> [args]` in both Claude Code and OpenCode.\n \n ### `setup`\n \n Verify trae-cli installation and auth status.\n \n ```bash\n-/trae:setup          # Claude Code\n-# OpenCode: trae-setup tool (no args)\n+/trae:setup\n ```\n \n ---\n \n ### `run \"prompt\"`\n \n Delegate a natural language task to Trae Agent.\n \n ```bash\n /trae:run \"描述任务\" [options]\n ```\n \n | Option | Alias | Description |\n |--------|-------|-------------|\n | `--background` | | Run in background (returns job ID) |\n | `--json` | | Structured JSON output with `session_id` |\n | `--yolo` | `-y` | Skip tool permission confirmations |\n | `--resume [ID]` | | Resume session (omit ID = auto-resume latest) |\n | `--session-id <id>` | | Specify new session ID |\n | `--worktree [name]` | `-w` | Isolated git worktree (omit name = `__auto__`) |\n | `--allowed-tool <n>` | | Auto-approve tool (repeatable) |\n | `--disallowed-tool <n>` | | Auto-reject tool (repeatable) |\n | `--query-timeout <d>` | | Per-query timeout (e.g. `30s`, `5m`) |\n | `--bash-tool-timeout <d>` | | Bash tool timeout |\n | `-c <k=v>` | | Config override (repeatable) |\n | `--inject-context <id>` | | Inject another session's context |\n \n **Examples:**\n ```bash\n /trae:run \"重构认证模块\" --background --json\n /trae:run \"继续\" --resume --yolo\n /trae:run \"修复 bug\" --worktree --allowed-tool Edit --allowed-tool Bash\n ```\n \n ---\n \n ### `review` / `adversarial-review`\n \n Code review with automatic git diff.\n \n ```bash\n /trae:review [options]                   # standard\n /trae:adversarial-review [options]       # adversarial (strict)\n-# OpenCode: trae-review tool with adversarial: true/false\n ```\n \n | Option | Alias | Description |\n |--------|-------|-------------|\n | `--base <branch>` | | Base branch (auto-detected: main/master/develop) |\n | `--background` | | Run in background (recommended for large diffs) |\n | `--yolo` | `-y` | Skip tool confirmations |\n | `--json` | | Structured JSON output |\n | `--session-id <id>` | | Specify session ID |\n \n Auto-detects base branch and estimates review size, recommending background mode for large changes.\n \n ---\n \n ### `sessions <action>`\n \n Manage trae-cli's historical sessions (reads from file cache directly — no HTTP calls).\n \n ```bash\n /trae:sessions <action> [options]\n ```\n \n | Action | Args | Options | Description |\n |--------|------|---------|-------------|\n | `list` | | `--cwd`, `--limit` (default 20) | List all sessions |\n | `recent` | | `--cwd` | Most recent session for cwd |\n | `detail <id>` | `<session-id>` | | Session metadata + event counts |\n | `conversation <id>` | `<session-id>` | `--limit` (default 50) | Conversation messages |\n | `tools <id>` | `<session-id>` | | Tool call stats + records (up to 30) |\n | `context <id>` | `<session-id>` | | Full context summary |\n | `find <topic>` | `<topic>` | | Search by keyword |\n | `delete <id>` | `<session-id>` | | Delete a session |\n | `delete-smoke` | | | Bulk delete sessions with \"smoke\" in ID/title |\n \n ---\n \n ### `acp <action>`\n \n ACP protocol: **JSON-RPC over STDIO** (not HTTP). Enables Agent-to-Agent communication.\n \n ```bash\n /trae:acp <action> [options]\n ```\n \n | Action | Args | Description |\n |--------|------|-------------|\n | `start` | `--yolo`, `--allowed-tool`, `--disabled-tool` | Start ACP Server (blocks, keeps STDIO pipe open) |\n | `stop` | | Stop ACP Server |\n | `status` | | Check server status |\n | `agents` | | Discover available agents (auto-starts server if needed) |\n | `run <prompt>` | `<prompt>` | Execute task via ACP (auto-starts server) |\n | `stream <prompt>` | `<prompt>` | Stream task output in real-time (auto-starts server) |\n \n > **Note**: `acp start` is a blocking call — it holds the process alive for the STDIO pipe. Use `agents`, `run`, or `stream` for interactive use (they auto-start the server).\n \n ---\n \n ### `status`\n \n List all background tasks (reads `.claude-trae-plugin/` for PID files).\n \n ```bash\n /trae:status\n ```\n \n ---\n \n ### `result <task-id>`\n \n Get output of a background task.\n \n ```bash\n /trae:result <task-id>\n ```\n \n ---\n \n ### `cancel <task-id>`\n \n Force-kill a background task (SIGKILL).\n \n ```bash\n /trae:cancel <task-id>\n ```\n \n ---\n \n ### `rescue`\n \n Diagnose recent task failures, collect error logs and git status.\n \n ```bash\n /trae:rescue [--context text]\n ```\n \n | Option | Description |\n |--------|-------------|\n | `--context <text>` | Additional context for diagnosis |\n \n ---\n \n ### Lifecycle Hooks\n \n Auto-triggered — no manual invocation needed.\n \n | Hook | Trigger | Behavior |\n |------|---------|----------|\n | `SessionStart` | Claude Code startup / OpenCode session.created | Check trae-cli, remind background tasks |\n | `SessionEnd` | Claude Code exit / OpenCode session.deleted | Clean old logs, remind running tasks |\n | `Stop` | User stops operation | Gate on uncommitted changes |\n | `PostToolUse` | After `/trae:review` | Log review results |\n \n ---\n \n ### `hooks <type>` (internal)\n \n Internal hook handler — invoked by lifecycle scripts, not users.\n \n ```bash\n trae-plugin-cc hooks session-start|session-end|stop-gate\n ```\n \n ## Project Structure\n \n ```\n trae-plugin-cc/\n ├── .claude-plugin/          # Claude Code plugin + marketplace manifest\n ├── commands/                # Slash command docs (*.md)\n ├── .mcp.json                # 4 MCP tool definitions\n ├── hooks/hooks.json         # Claude Code lifecycle hooks\n ├── scripts/                 # Hook scripts (*.mjs)\n ├── src/                     # Core CLI (TypeScript → dist/index.js)\n │   ├── index.ts             # Entrypoint\n │   ├── commands/            # Command handlers\n │   └── utils/               # TraeExecutor, SessionReader, AuthBridge, AcpClient...\n ├── .opencode/               # OpenCode integration\n │   ├── tools/               # 9 Bun tools (*.ts)\n │   ├── commands/            # 10 command docs (*.md)\n │   ├── plugins/             # Event hooks\n │   └── package.json         # OpenCode deps (@opencode-ai/plugin)\n └── tests/                   # Jest tests\n ```\n \n ## Development\n \n ```bash\n npm run build          # esbuild → dist/index.js (run after ANY src/ change)\n npm test               # jest (all tests)\n cd .opencode && npm install && cd ..   # OpenCode deps (once)\n ```\n \n ### ⚠️ Build Rule\n \n `npm run build` uses **esbuild** (bundled single file with shebang) — this is the **production entrypoint**. `npm run build:tsc` produces separate `.js` files for module imports but is not used at runtime.\n \n | Command | Output | Used By |\n |---------|--------|---------|\n | `npm run build` | `dist/index.js` (bundled) | **Runtime CLI** |\n | `npm run build:tsc` | `dist/**/*.js` (separate) | Direct module imports |\n \n **Always run `npm run build` after modifying `src/` before testing.** This applies to OpenCode too — its tools spawn `dist/index.js`.\n \n ## Session Cache Paths\n \n trae-cli stores sessions on disk (read directly by this plugin):\n \n | Platform | Path |\n |----------|------|\n | macOS | `~/Library/Caches/trae_cli/sessions/` |\n | Linux | `~/.cache/trae_cli/sessions/` |\n \n ## License\n \n MIT\n",
+              "additions": 8,
+              "deletions": 12,
               "status": "modified"
             }
           ]
@@ -2144,19 +2144,22 @@
         },
         "cost": 0,
         "tokens": {
-          "input": 0,
-          "output": 0,
-          "reasoning": 0,
+          "total": 42856,
+          "input": 42778,
+          "output": 72,
+          "reasoning": 6,
           "cache": {
-            "read": 0,
-            "write": 0
+            "write": 0,
+            "read": 0
           }
         },
         "modelID": "Qwen3.6-Plus",
         "providerID": "volcengine-key1",
         "time": {
-          "created": 1776861558712
+          "created": 1776861558712,
+          "completed": 1776861582507
         },
+        "finish": "tool-calls",
         "id": "msg_db533b7b8001s7RX61r5G3klFZ",
         "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP"
       },
@@ -2184,22 +2187,236 @@
           "tool": "bash",
           "callID": "call_b51db2eb546a4bacaae378d0",
           "state": {
-            "metadata": {
-              "output": "",
-              "description": "Commit and push README fix"
-            },
-            "status": "running",
+            "status": "completed",
             "input": {
               "command": "git add README.md && git commit -m \"fix: clarify OpenCode also supports /trae: command interface\" && git push",
               "description": "Commit and push README fix"
             },
+            "output": "[main 86af638] fix: clarify OpenCode also supports /trae: command interface\n Committer: ubuntu <ubuntu@ubuntudexuniji.local>\nYour name and email address were configured automatically based\non your username and hostname. Please check that they are accurate.\nYou can suppress this message by setting them explicitly. Run the\nfollowing command and follow the instructions in your editor to edit\nyour configuration file:\n\n    git config --global --edit\n\nAfter doing this, you may fix the identity used for this commit with:\n\n    git commit --amend --reset-author\n\n 1 file changed, 7 insertions(+), 11 deletions(-)\n[entire] Pushing entire/checkpoints/v1 to origin.......... done\nTo github.com:wangxumarshall/idea0015-trae-plugin-cc.git\n ! [rejected]        main -> main (fetch first)\nerror: failed to push some refs to 'github.com:wangxumarshall/idea0015-trae-plugin-cc.git'\nhint: Updates were rejected because the remote contains work that you do\nhint: not have locally. This is usually caused by another repository pushing\nhint: to the same ref. You may want to first integrate the remote changes\nhint: (e.g., 'git pull ...') before pushing again.\nhint: See the 'Note about fast-forwards' in 'git push --help' for details.\n",
+            "metadata": {
+              "output": "[main 86af638] fix: clarify OpenCode also supports /trae: command interface\n Committer: ubuntu <ubuntu@ubuntudexuniji.local>\nYour name and email address were configured automatically based\non your username and hostname. Please check that they are accurate.\nYou can suppress this message by setting them explicitly. Run the\nfollowing command and follow the instructions in your editor to edit\nyour configuration file:\n\n    git config --global --edit\n\nAfter doing this, you may fix the identity used for this commit with:\n\n    git commit --amend --reset-author\n\n 1 file changed, 7 insertions(+), 11 deletions(-)\n[entire] Pushing entire/checkpoints/v1 to origin.......... done\nTo github.com:wangxumarshall/idea0015-trae-plugin-cc.git\n ! [rejected]        main -> main (fetch first)\nerror: failed to push some refs to 'github.com:wangxumarshall/idea0015-trae-plugin-cc.git'\nhint: Updates were rejected because the remote contains work that you do\nhint: not have locally. This is usually caused by another repository pushing\nhint: to the same ref. You may want to first integrate the remote changes\nhint: (e.g., 'git pull ...') before pushing again.\nhint: See the 'Note about fast-forwards' in 'git push --help' for details.\n",
+              "exit": 1,
+              "description": "Commit and push README fix",
+              "truncated": false
+            },
+            "title": "Commit and push README fix",
             "time": {
-              "start": 1776861561189
+              "start": 1776861582413,
+              "end": 1776861582418
             }
           },
           "id": "prt_db533bd390012TmBHZWq8d5CMt",
           "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP",
           "messageID": "msg_db533b7b8001s7RX61r5G3klFZ"
+        },
+        {
+          "reason": "tool-calls",
+          "snapshot": "5b0525fcc20cb4fe771cf020954830b183bc5047",
+          "type": "step-finish",
+          "tokens": {
+            "total": 42856,
+            "input": 42778,
+            "output": 72,
+            "reasoning": 6,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_db5341453001hxIc8UUkD650DA",
+          "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP",
+          "messageID": "msg_db533b7b8001s7RX61r5G3klFZ"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_db5324e38001r240cGtNVT9s2R",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/ubuntu/1-project/idea0015-trae-plugin-cc",
+          "root": "/Users/ubuntu/1-project/idea0015-trae-plugin-cc"
+        },
+        "cost": 0,
+        "tokens": {
+          "total": 43248,
+          "input": 43180,
+          "output": 53,
+          "reasoning": 15,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "Qwen3.6-Plus",
+        "providerID": "volcengine-key1",
+        "time": {
+          "created": 1776861582511,
+          "completed": 1776861601630
+        },
+        "finish": "tool-calls",
+        "id": "msg_db53414af001FfCmwr6bOSpsdW",
+        "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP"
+      },
+      "parts": [
+        {
+          "snapshot": "5b0525fcc20cb4fe771cf020954830b183bc5047",
+          "type": "step-start",
+          "id": "prt_db53419e7001DGRB0LZCtXZxk6",
+          "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP",
+          "messageID": "msg_db53414af001FfCmwr6bOSpsdW"
+        },
+        {
+          "type": "reasoning",
+          "text": "推送被拒绝了，因为远程有新的提交。需要先拉取远程更改。",
+          "time": {
+            "start": 1776861583850,
+            "end": 1776861584176
+          },
+          "id": "prt_db53419ea001OV5f3upmfFW9ce",
+          "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP",
+          "messageID": "msg_db53414af001FfCmwr6bOSpsdW"
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_f1ba2a032e3b4bc1ad644902",
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "git pull --rebase && git push",
+              "description": "Pull rebase then push"
+            },
+            "output": "From github.com:wangxumarshall/idea0015-trae-plugin-cc\n   48a4f0b..3611547  main       -> origin/main\nRebasing (1/1)\r\r\u001b[KSuccessfully rebased and updated refs/heads/main.\nTo github.com:wangxumarshall/idea0015-trae-plugin-cc.git\n   3611547..3d0e71d  main -> main\n",
+            "metadata": {
+              "output": "From github.com:wangxumarshall/idea0015-trae-plugin-cc\n   48a4f0b..3611547  main       -> origin/main\nRebasing (1/1)\r\r\u001b[KSuccessfully rebased and updated refs/heads/main.\nTo github.com:wangxumarshall/idea0015-trae-plugin-cc.git\n   3611547..3d0e71d  main -> main\n",
+              "exit": 0,
+              "description": "Pull rebase then push",
+              "truncated": false
+            },
+            "title": "Pull rebase then push",
+            "time": {
+              "start": 1776861601486,
+              "end": 1776861601497
+            }
+          },
+          "id": "prt_db5341b31001bDkxySlZyhTieR",
+          "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP",
+          "messageID": "msg_db53414af001FfCmwr6bOSpsdW"
+        },
+        {
+          "reason": "tool-calls",
+          "snapshot": "4477879f65e2514d045afaa82df186aa18d1922f",
+          "type": "step-finish",
+          "tokens": {
+            "total": 43248,
+            "input": 43180,
+            "output": 53,
+            "reasoning": 15,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_db5345edd001lOwtvmKbcb5p4r",
+          "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP",
+          "messageID": "msg_db53414af001FfCmwr6bOSpsdW"
+        },
+        {
+          "type": "patch",
+          "hash": "5b0525fcc20cb4fe771cf020954830b183bc5047",
+          "files": [
+            "/Users/ubuntu/1-project/idea0015-trae-plugin-cc/README.md"
+          ],
+          "id": "prt_db5345f5d001BFSbzukPFN54SV",
+          "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP",
+          "messageID": "msg_db53414af001FfCmwr6bOSpsdW"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_db5324e38001r240cGtNVT9s2R",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/ubuntu/1-project/idea0015-trae-plugin-cc",
+          "root": "/Users/ubuntu/1-project/idea0015-trae-plugin-cc"
+        },
+        "cost": 0,
+        "tokens": {
+          "total": 43521,
+          "input": 43371,
+          "output": 142,
+          "reasoning": 8,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "Qwen3.6-Plus",
+        "providerID": "volcengine-key1",
+        "time": {
+          "created": 1776861601633,
+          "completed": 1776861606338
+        },
+        "finish": "stop",
+        "id": "msg_db5345f61001qiZKiaswPaIF85",
+        "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP"
+      },
+      "parts": [
+        {
+          "snapshot": "4477879f65e2514d045afaa82df186aa18d1922f",
+          "type": "step-start",
+          "id": "prt_db534671a001u5T4CY5D7ekk9h",
+          "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP",
+          "messageID": "msg_db5345f61001qiZKiaswPaIF85"
+        },
+        {
+          "type": "reasoning",
+          "text": "推送成功了。让我总结一下更改内容。",
+          "time": {
+            "start": 1776861603611,
+            "end": 1776861603733
+          },
+          "id": "prt_db534671b001vjKoOmIxqE8xqY",
+          "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP",
+          "messageID": "msg_db5345f61001qiZKiaswPaIF85"
+        },
+        {
+          "type": "text",
+          "text": "已更新并推送成功。主要修正：\n\n1. **架构图**：OpenCode 从 \"10 Command Docs\" 改为 \"10 Commands (`/trae:*`)\"，体现命令接口统一\n2. **架构说明**：从区分两个平台调用方式，改为 \"unified `/trae:*` command interface\"，说明 Claude Code 额外支持 MCP 工具\n3. **Quick Start**：合并为统一的命令示例，添加注释说明 Claude Code 额外支持 MCP 自主调用\n4. **Commands Reference**：去除各命令中 `# Claude Code` / `# OpenCode: xxx tool` 的平台区分标注",
+          "time": {
+            "start": 1776861603735,
+            "end": 1776861606257
+          },
+          "id": "prt_db5346797001Yk4KH4ARENlqL1",
+          "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP",
+          "messageID": "msg_db5345f61001qiZKiaswPaIF85"
+        },
+        {
+          "reason": "stop",
+          "snapshot": "4477879f65e2514d045afaa82df186aa18d1922f",
+          "type": "step-finish",
+          "tokens": {
+            "total": 43521,
+            "input": 43371,
+            "output": 142,
+            "reasoning": 8,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_db53471730017lLuTHwORjNkhb",
+          "sessionID": "ses_24ad5df21ffeO0Tq9fzDP63vqP",
+          "messageID": "msg_db5345f61001qiZKiaswPaIF85"
         }
       ]
     }
