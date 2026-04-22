@@ -1,0 +1,22 @@
+Thoroughly explore the project at /Users/ubuntu/1-project/idea0015-trae-plugin-cc. I need a complete analysis of:
+
+1. Full directory tree (all files and folders)
+2. Package.json contents
+3. All TypeScript source files in src/
+4. All test files in tests/
+5. All command markdown files in commands/
+6. All MCP config in .mcp.json
+7. All hooks in hooks/
+8. All scripts in scripts/
+9. All OpenCode tools in .opencode/tools/
+10. All OpenCode commands in .opencode/commands/
+11. All OpenCode plugins in .opencode/plugins/
+12. tsconfig.json and any build configs
+13. jest.config if exists
+
+For each file, provide:
+- Full file path
+- Complete contents or detailed summary
+- Purpose and role in the architecture
+
+Return EVERYTHING you find. This is critical for a major refactoring plan.
