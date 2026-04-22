@@ -1,0 +1,24 @@
+I need to deeply understand "opencode" - the AI coding tool that this project is being run within. Do all of the following:
+
+1. Check if opencode binary exists: run `which opencode` or `command -v opencode`
+2. Try: `opencode --help` to see CLI options
+3. Look at the opencode source repository: it's at https://github.com/anomalyco/opencode. Fetch the README and key documentation about plugins/skills/MCP/tools at https://docs.opencode.ai or the GitHub repo.
+4. Examine the skills system: read ALL SKILL.md files in /Users/ubuntu/.agents/skills/ directory
+5. Look at /Users/ubuntu/.agents/skills/ directory structure carefully
+6. Check /Users/ubuntu/.agents/skills/web-access/SKILL.md since it's described as handling web access
+7. Look for any opencode configuration files: search for `.opencode.json`, `opencode.json`, `opencode.config.*` anywhere relevant
+8. Look at /Users/ubuntu/1-project/idea0015-trae-plugin-cc/.opencode/ in detail - all files
+9. Check how tools/skills are integrated - look at the system prompt structure that tells the AI about available tools
+10. Look at /Users/ubuntu/1-project/idea0015-trae-plugin-cc/.mcp.json - how MCP tools are defined in this project
+11. Look at /Users/ubuntu/1-project/idea0015-trae-plugin-cc/.claude-plugin/plugin.json and understand what Claude Code specific fields are
+12. Search for any documentation about how opencode handles plugins, tools, skills, MCP integration, etc.
+
+I need to understand:
+- What is opencode's plugin/tool/skill architecture?
+- How does it compare to Claude Code's plugin system (plugin.json, commands/*.md, hooks/hooks.json, .mcp.json)?
+- What's the equivalent of slash commands in opencode?
+- What's the equivalent of MCP tool registration in opencode?
+- What's the equivalent of hooks?
+- Can we port this trae-plugin-cc to opencode, or should it be adapted as something else?
+
+Be very thorough. This is critical for the porting plan.
