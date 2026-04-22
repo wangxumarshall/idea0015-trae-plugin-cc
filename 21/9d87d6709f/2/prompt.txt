@@ -1,0 +1,22 @@
+Explore the opencode codebase and environment. I need to understand:
+
+1. Read /Users/ubuntu/1-project/idea0015-trae-plugin-cc/.opencode/ directory in full - package.json, plugins dir, etc.
+2. Check if there's an opencode binary installed. Run `opencode --help` to see its CLI interface.
+3. Search for opencode's plugin/skill/extension system:
+   - Look at /Users/ubuntu/.agents/ directory structure  
+   - Read any SKILL.md files that describe how skills/plugins work
+   - Read the find-skills skill at /Users/ubuntu/.agents/skills/find-skills/SKILL.md
+4. Check the opencode source code if available - look for how commands, tools, plugins, MCP tools are registered.
+5. Look at how slash commands or equivalent commands work in opencode vs Claude Code.
+6. Check if opencode has an equivalent to Claude Code's hooks/hooks.json system.
+7. Check if opencode uses .mcp.json for MCP tool registration.
+
+I need a complete understanding of opencode's extension architecture so I can plan how to port a Claude Code plugin to it.
+
+Return:
+- opencode plugin/skill/tool extension model
+- How commands are defined and invoked
+- How MCP tools are declared and used  
+- How hooks/lifecycle events work (if at all)
+- File structure expectations for a plugin/skill
+- Key differences from Claude Code's plugin system
