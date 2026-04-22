@@ -38,12 +38,14 @@ var SessionReader = class {
   historyFile;
   jsonOutputCache = /* @__PURE__ */ new Map();
   constructor() {
-    const cacheDir = path.join(
-      os.homedir(),
-      "Library",
-      "Caches",
-      "trae_cli"
-    );
+    const homeDir = os.homedir();
+    const candidates = [
+      path.join(homeDir, "Library", "Caches", "trae-cli"),
+      path.join(homeDir, "Library", "Caches", "trae_cli"),
+      path.join(homeDir, ".cache", "trae-cli"),
+      path.join(homeDir, ".cache", "trae_cli")
+    ];
+    const cacheDir = candidates.find((dir) => fs.existsSync(dir)) || candidates[0];
     this.sessionsDir = path.join(cacheDir, "sessions");
     this.historyFile = path.join(cacheDir, "history.jsonl");
   }
@@ -3671,23 +3673,23 @@ async function runTask(args) {
       config.jsonOutput = true;
     } else if (arg === "--yolo" || arg === "-y") {
       config.yolo = true;
+    } else if (arg === "--resume" && args[i + 1] && !args[i + 1].startsWith("-")) {
+      config.resume = args[i + 1];
+      i++;
     } else if (arg === "--resume" || arg === "--resume=AUTO") {
       config.resume = "AUTO";
     } else if (arg.startsWith("--resume=")) {
       config.resume = arg.substring("--resume=".length);
-    } else if (arg === "--resume" && args[i + 1]) {
-      config.resume = args[i + 1];
-      i++;
     } else if (arg === "--session-id" && args[i + 1]) {
       config.sessionId = args[i + 1];
+      i++;
+    } else if ((arg === "--worktree" || arg === "-w") && args[i + 1] && !args[i + 1].startsWith("-")) {
+      config.worktree = args[i + 1];
       i++;
     } else if (arg === "--worktree" || arg === "-w") {
       config.worktree = "__auto__";
     } else if (arg.startsWith("--worktree=")) {
       config.worktree = arg.substring("--worktree=".length);
-    } else if (arg === "--worktree" && args[i + 1]) {
-      config.worktree = args[i + 1];
-      i++;
     } else if (arg === "--allowed-tool" && args[i + 1]) {
       config.allowedTools = config.allowedTools || [];
       config.allowedTools.push(args[i + 1]);
@@ -4010,6 +4012,8 @@ async function sessions(args) {
       return findSession(args);
     case "delete":
       return deleteSession(args);
+    case "delete-smoke":
+      return deleteSmokeSessions(args);
     default:
       console.log("\u7528\u6CD5: /trae:sessions <action> [options]");
       console.log("\u52A8\u4F5C:");
@@ -4021,6 +4025,7 @@ async function sessions(args) {
       console.log("  context <id>  \u83B7\u53D6\u5B8C\u6574\u4E0A\u4E0B\u6587\u6458\u8981");
       console.log("  find <topic>  \u6309\u4E3B\u9898\u641C\u7D22\u4F1A\u8BDD");
       console.log("  delete <id>   \u5220\u9664\u4F1A\u8BDD");
+      console.log('  delete-smoke  \u5220\u9664\u6807\u9898\u6216ID\u5305\u542B"smoke"\u7684\u4F1A\u8BDD');
   }
 }
 function listSessions(args) {
@@ -4217,6 +4222,34 @@ function deleteSession(args) {
   } else {
     console.log(`\u5220\u9664\u4F1A\u8BDD ${sessionId} \u5931\u8D25\u3002`);
   }
+}
+function deleteSmokeSessions(args) {
+  const allSessions = reader.listSessions();
+  const smokeSessions = allSessions.filter(
+    (s) => s.id.toLowerCase().includes("smoke") || s.metadata.title.toLowerCase().includes("smoke")
+  );
+  if (smokeSessions.length === 0) {
+    console.log('\u6CA1\u6709\u627E\u5230\u5305\u542B "smoke" \u7684\u4F1A\u8BDD\u3002');
+    return;
+  }
+  console.log(`
+\u627E\u5230 ${smokeSessions.length} \u4E2A\u5305\u542B "smoke" \u7684\u4F1A\u8BDD:
+`);
+  for (const s of smokeSessions) {
+    console.log(`  - ${s.id.substring(0, 36)} | ${s.metadata.title}`);
+  }
+  let deleted = 0;
+  let failed = 0;
+  for (const s of smokeSessions) {
+    const success = reader.deleteSession(s.id);
+    if (success) {
+      deleted++;
+    } else {
+      failed++;
+    }
+  }
+  console.log(`
+\u5220\u9664\u5B8C\u6210: \u6210\u529F ${deleted} \u4E2A\uFF0C\u5931\u8D25 ${failed} \u4E2A`);
 }
 
 // src/commands/acp.ts

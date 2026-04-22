@@ -24,6 +24,8 @@ export async function sessions(args: string[]) {
       return findSession(args);
     case 'delete':
       return deleteSession(args);
+    case 'delete-smoke':
+      return deleteSmokeSessions(args);
     default:
       console.log('用法: /trae:sessions <action> [options]');
       console.log('动作:');
@@ -35,6 +37,7 @@ export async function sessions(args: string[]) {
       console.log('  context <id>  获取完整上下文摘要');
       console.log('  find <topic>  按主题搜索会话');
       console.log('  delete <id>   删除会话');
+      console.log('  delete-smoke  删除标题或ID包含"smoke"的会话');
   }
 }
 
@@ -271,4 +274,36 @@ function deleteSession(args: string[]) {
   } else {
     console.log(`删除会话 ${sessionId} 失败。`);
   }
+}
+
+function deleteSmokeSessions(args: string[]) {
+  const allSessions = reader.listSessions();
+  const smokeSessions = allSessions.filter(s =>
+    s.id.toLowerCase().includes('smoke') ||
+    s.metadata.title.toLowerCase().includes('smoke')
+  );
+
+  if (smokeSessions.length === 0) {
+    console.log('没有找到包含 "smoke" 的会话。');
+    return;
+  }
+
+  console.log(`\n找到 ${smokeSessions.length} 个包含 "smoke" 的会话:\n`);
+  for (const s of smokeSessions) {
+    console.log(`  - ${s.id.substring(0, 36)} | ${s.metadata.title}`);
+  }
+
+  let deleted = 0;
+  let failed = 0;
+
+  for (const s of smokeSessions) {
+    const success = reader.deleteSession(s.id);
+    if (success) {
+      deleted++;
+    } else {
+      failed++;
+    }
+  }
+
+  console.log(`\n删除完成: 成功 ${deleted} 个，失败 ${failed} 个`);
 }
