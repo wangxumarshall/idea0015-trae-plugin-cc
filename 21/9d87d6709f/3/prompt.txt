@@ -1,0 +1,18 @@
+Thoroughly explore the project at /Users/ubuntu/1-project/idea0015-trae-plugin-cc. I need you to:
+
+1. Read the full directory structure (all directories)
+2. Read the plugin manifest files: .claude-plugin/plugin.json, .claude-plugin/marketplace.json
+3. Read all command definitions in commands/ directory (all .md files)
+4. Read src/commands/ directory and all files
+5. Read src/utils/ directory and all files
+6. Read tests/ directory and all test files
+7. Read the .claude-trae-plugin/ directory if it exists
+8. Check the commands subdirectory for any additional config files
+
+Return a comprehensive summary:
+- Complete file tree
+- Plugin registration mechanism (how Claude Code discovers this plugin)
+- All command definitions (names, descriptions, how they map to JS entry points)
+- All utility classes and their responsibilities
+- Test coverage (what's tested)
+- The overall architecture: how does a slash command like /trae:run flow from user input to trae-cli execution?
