@@ -1,0 +1,28 @@
+I need a comprehensive technical comparison of the two integration protocols used by this plugin.
+
+## For Claude Code / MCP:
+1. Read `.mcp.json` fully - what is the exact JSON schema for tool definitions?
+2. Read `commands/*.md` (all 10 files) - what is the exact structure of slash commands? What frontmatter fields exist? What's the format of the content?
+3. Read `hooks/hooks.json` - what is the exact schema? How do matchers work? What hooks exist?
+4. Read `.claude-plugin/plugin.json` if it exists - any additional metadata?
+
+## For OpenCode:
+1. Read `.opencode/tools/trae-run.ts` and `.opencode/tools/trae-acp.ts` fully - what is the exact structure of `tool({})`? What fields are used (description, args, execute)? What's the type of `args`? How does `execute` work?
+2. Read `.opencode/commands/trae-run.md` and `.opencode/commands/trae-sessions.md` - what frontmatter? What content format?
+3. Read `.opencode/plugins/trae-hooks.ts` - how are events mapped? What's the Plugin export structure?
+4. Read `.opencode/node_modules/@opencode-ai/plugin/dist/index.d.ts` or `.d.ts` files to get the exact TypeScript types for `tool()`, `Plugin`, and the hooks system.
+5. Read `.opencode/package.json` for dependencies.
+
+## Comparison Requirements:
+For EACH protocol type (MCP vs Bun Tool, Slash Command vs Command Doc, Lifecycle Hook vs Plugin), compare:
+
+1. **Data format** (JSON Schema vs TypeScript object)
+2. **Tool definition structure** - exact field names, types, nesting
+3. **Parameter definition** - how are arguments/parameters specified?
+4. **Execution model** - how is the function actually invoked? (HTTP/stdio vs direct function call vs subprocess spawn)
+5. **Discovery mechanism** - how does the host find and register these?
+6. **Type safety** - runtime vs compile-time validation
+7. **Serialization** - how are inputs/outputs passed?
+8. **Error handling** - how do errors propagate back to the host?
+
+Return a complete technical specification comparison, including actual code examples from both protocols for the SAME functionality (e.g., how "run task" is defined in .mcp.json vs .opencode/tools/trae-run.ts).
