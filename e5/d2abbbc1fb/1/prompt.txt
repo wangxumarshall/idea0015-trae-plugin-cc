@@ -1,0 +1,5 @@
+源码级验证opencode是否支持 /trae-run 灯形式
+
+---
+
+为什么我在opencode中通过 slash 能看到所有trae-xx的命令
