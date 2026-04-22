@@ -3,7 +3,7 @@
   "checkpoint_id": "684ce660cf35",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 0,
+  "checkpoints_count": 1,
   "files_touched": [
     ".gitignore",
     "dist/commands/acp.js",
@@ -31,13 +31,19 @@
       "transcript": "/68/4ce660cf35/0/full.jsonl",
       "content_hash": "/68/4ce660cf35/0/content_hash.txt",
       "prompt": "/68/4ce660cf35/0/prompt.txt"
+    },
+    {
+      "metadata": "/68/4ce660cf35/1/metadata.json",
+      "transcript": "/68/4ce660cf35/1/full.jsonl",
+      "content_hash": "/68/4ce660cf35/1/content_hash.txt",
+      "prompt": "/68/4ce660cf35/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 39883,
+    "input_tokens": 20804578,
     "cache_creation_tokens": 0,
     "cache_read_tokens": 0,
-    "output_tokens": 2108,
-    "api_call_count": 3
+    "output_tokens": 57718,
+    "api_call_count": 165
   }
 }
