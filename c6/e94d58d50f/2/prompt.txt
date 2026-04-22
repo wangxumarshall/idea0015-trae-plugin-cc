@@ -1,0 +1,14 @@
+I need to understand how an end user would use trae-plugin-cc within OpenCode. Explore the following and return a comprehensive summary:
+
+1. Read ALL files in .opencode/tools/ to understand what tools are available and their parameters
+2. Read ALL files in .opencode/commands/ to understand command descriptions
+3. Read .opencode/plugins/trae-hooks.ts if it exists
+4. Read any README or setup instructions related to OpenCode
+5. Check if there are any user-facing docs about OpenCode usage
+
+Return:
+- List of all available tools with their descriptions and parameters
+- List of all commands with their descriptions
+- How to set up/install the plugin within OpenCode
+- Typical workflow for a user
+- Any important tips or limitations
