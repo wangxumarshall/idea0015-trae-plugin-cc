@@ -22,9 +22,10 @@ The plugin bridges [**Claude Code**](https://claude.ai/code) and [**OpenCode**](
 │  ┌──────────────────────┐          ┌──────────────────────────┐   │
 │  │    Claude Code       │          │       OpenCode           │   │
 │  ├──────────────────────┤          ├──────────────────────────┤   │
-│  │ 10 Slash Commands    │          │ 10 Commands (/trae:*)    │   │
-│  │ 4  MCP Tools (.json) │          │ 9  Bun Tools (.ts)       │   │
-│  │ 4  Lifecycle Hooks   │          │ Event Hooks (.ts)        │   │
+│  │ 10 Slash Commands    │          │  9 Tools + 10 Commands   │   │
+│  │    commands/*.md     │          │    tools/ + commands/    │   │
+│  │ 4  MCP Tools (.json) │          │  Event Hooks (.ts)       │   │
+│  │ 4  Lifecycle Hooks   │          │    plugins/              │   │
 │  └──────────┬───────────┘          └──────────┬───────────────┘   │
 │             │                                  │                    │
 │  ┌──────────▼──────────────────────────────────▼───────────────┐   │
@@ -40,7 +41,7 @@ The plugin bridges [**Claude Code**](https://claude.ai/code) and [**OpenCode**](
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-Both platforms share the same core CLI (`dist/index.js`) with unified `/trae:*` command interface. Claude Code additionally supports MCP tools for AI-autonomous invocation.
+Both platforms share the same core CLI (`dist/index.js`). Claude Code uses slash commands (`/trae:*`), MCP tools for AI-autonomous invocation, and lifecycle hooks; OpenCode uses Bun tools (`.opencode/tools/`) and command descriptions (`.opencode/commands/`) — all ultimately invoking `node dist/index.js <command>`.
 
 ## Prerequisites
 
@@ -106,7 +107,7 @@ Expected output:
 
 ## Quick Start
 
-Both Claude Code and OpenCode support the same `/trae:*` command interface:
+**Claude Code** (slash commands — user types directly):
 
 ```
 /trae:run "重构用户认证模块"           # execute task
@@ -117,19 +118,35 @@ Both Claude Code and OpenCode support the same `/trae:*` command interface:
 /trae:acp run "分析代码质量"            # execute via ACP
 ```
 
-> **Note**: Claude Code additionally registers 4 MCP tools (`trae_run`, `trae_review`, `trae_sessions`, `trae_acp`) for AI-autonomous invocation beyond what the user can trigger manually.
+Claude Code additionally auto-registers 4 MCP tools (`trae_run`, `trae_review`, `trae_sessions`, `trae_acp`) for AI-autonomous invocation.
+
+**OpenCode** (Bun tools — agent calls tools):
+
+| Tool | CLI | Description |
+|------|-----|-------------|
+| `trae-setup` | `setup` | Check env & auth |
+| `trae-run` | `run` | Execute task |
+| `trae-review` | `review` / `adversarial-review` | Code review |
+| `trae-sessions` | `sessions` | Session management (9 actions) |
+| `trae-acp` | `acp` | ACP protocol (6 actions) |
+| `trae-status` | `status` | Background task status |
+| `trae-result` | `result` | Get task output |
+| `trae-cancel` | `cancel` | Cancel task |
+| `trae-rescue` | `rescue` | Failure diagnosis |
+
+OpenCode's TUI `/` panel lists available tools from `.opencode/tools/`; `trae-` prefix comes from filenames, not from this plugin.
 
 ## Commands Reference
 
-All commands are invoked as `/trae:<command> [args]` in both Claude Code and OpenCode.
+All commands map to `node dist/index.js <command> [args]`.
+In **Claude Code**, users type `/trae:<command>` (slash commands).
+In **OpenCode**, agents call `trae-<command>` tools or follow command descriptions.
 
 ### `setup`
 
 Verify trae-cli installation and auth status.
 
-```bash
-/trae:setup
-```
+<table><tr><td>Claude Code</td><td>/trae:setup</td></tr><tr><td>OpenCode</td><td>trae-setup tool (no args)</td></tr></table>
 
 ---
 
@@ -137,9 +154,7 @@ Verify trae-cli installation and auth status.
 
 Delegate a natural language task to Trae Agent.
 
-```bash
-/trae:run "描述任务" [options]
-```
+<table><tr><td>Claude Code</td><td>/trae:run "描述任务" [options]</td></tr><tr><td>OpenCode</td><td>trae-run tool with prompt + options</td></tr></table>
 
 | Option | Alias | Description |
 |--------|-------|-------------|
@@ -169,10 +184,7 @@ Delegate a natural language task to Trae Agent.
 
 Code review with automatic git diff.
 
-```bash
-/trae:review [options]                   # standard
-/trae:adversarial-review [options]       # adversarial (strict)
-```
+<table><tr><td>Claude Code</td><td>/trae:review or /trae:adversarial-review</td></tr><tr><td>OpenCode</td><td>trae-review tool with `adversarial: true/false`</td></tr></table>
 
 | Option | Alias | Description |
 |--------|-------|-------------|
@@ -190,9 +202,7 @@ Auto-detects base branch and estimates review size, recommending background mode
 
 Manage trae-cli's historical sessions (reads from file cache directly — no HTTP calls).
 
-```bash
-/trae:sessions <action> [options]
-```
+<table><tr><td>Claude Code</td><td>/trae:sessions <action> [options]</td></tr><tr><td>OpenCode</td><td>trae-sessions tool with `action` + args</td></tr></table>
 
 | Action | Args | Options | Description |
 |--------|------|---------|-------------|
@@ -212,9 +222,7 @@ Manage trae-cli's historical sessions (reads from file cache directly — no HTT
 
 ACP protocol: **JSON-RPC over STDIO** (not HTTP). Enables Agent-to-Agent communication.
 
-```bash
-/trae:acp <action> [options]
-```
+<table><tr><td>Claude Code</td><td>/trae:acp <action> [options]</td></tr><tr><td>OpenCode</td><td>trae-acp tool with `action` + args</td></tr></table>
 
 | Action | Args | Description |
 |--------|------|-------------|
@@ -233,9 +241,7 @@ ACP protocol: **JSON-RPC over STDIO** (not HTTP). Enables Agent-to-Agent communi
 
 List all background tasks (reads `.claude-trae-plugin/` for PID files).
 
-```bash
-/trae:status
-```
+<table><tr><td>Claude Code</td><td>/trae:status</td></tr><tr><td>OpenCode</td><td>trae-status tool</td></tr></table>
 
 ---
 
@@ -243,9 +249,7 @@ List all background tasks (reads `.claude-trae-plugin/` for PID files).
 
 Get output of a background task.
 
-```bash
-/trae:result <task-id>
-```
+<table><tr><td>Claude Code</td><td>/trae:result <task-id></td></tr><tr><td>OpenCode</td><td>trae-result tool with `task_id`</td></tr></table>
 
 ---
 
@@ -253,9 +257,7 @@ Get output of a background task.
 
 Force-kill a background task (SIGKILL).
 
-```bash
-/trae:cancel <task-id>
-```
+<table><tr><td>Claude Code</td><td>/trae:cancel <task-id></td></tr><tr><td>OpenCode</td><td>trae-cancel tool with `task_id`</td></tr></table>
 
 ---
 
@@ -263,9 +265,7 @@ Force-kill a background task (SIGKILL).
 
 Diagnose recent task failures, collect error logs and git status.
 
-```bash
-/trae:rescue [--context text]
-```
+<table><tr><td>Claude Code</td><td>/trae:rescue [--context text]</td></tr><tr><td>OpenCode</td><td>trae-rescue tool with optional `context`</td></tr></table>
 
 | Option | Description |
 |--------|-------------|
