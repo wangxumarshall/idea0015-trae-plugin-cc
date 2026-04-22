@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "a09ff5cf4014",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 6,
+  "files_touched": [
+    "AGENTS.md",
+    "dist/commands/acp.js",
+    "dist/index.js",
+    "dist/utils/acp-client.js",
+    "dist/utils/acp-server-manager.js",
+    "src/commands/acp.ts",
+    "src/utils/acp-client.ts",
+    "src/utils/acp-server-manager.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/a0/9ff5cf4014/0/metadata.json",
+      "transcript": "/a0/9ff5cf4014/0/full.jsonl",
+      "content_hash": "/a0/9ff5cf4014/0/content_hash.txt",
+      "prompt": "/a0/9ff5cf4014/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 10337313,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 26321,
+    "api_call_count": 134
+  }
+}

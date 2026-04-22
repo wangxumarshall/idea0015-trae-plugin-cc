@@ -1,0 +1,67 @@
+Manage ACP protocol server by running:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/dist/index.js" acp 
+```
+
+Actions:
+- `start`: Start the ACP Server (trae-cli acp serve)
+- `stop`: Stop the ACP Server
+- `status`: Check server status
+- `agents`: Discover available agents
+- `run "task"`: Execute a task via ACP
+- `stream "task"`: Stream a task execution (real-time output)
+
+Options for `start`:
+- `--yolo`: Skip tool permission confirmations
+- `--allowed-tool <name>`: Allow specific tools
+- `--disabled-tool <name>`: Disable specific tools
+
+Example: `acp start`, `acp status`, `acp agents`, `acp run "analyze code quality"`
+
+---
+
+Manage ACP protocol server by running:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/dist/index.js" acp start
+```
+
+Actions:
+- `start`: Start the ACP Server (trae-cli acp serve)
+- `stop`: Stop the ACP Server
+- `status`: Check server status
+- `agents`: Discover available agents
+- `run "task"`: Execute a task via ACP
+- `stream "task"`: Stream a task execution (real-time output)
+
+Options for `start`:
+- `--yolo`: Skip tool permission confirmations
+- `--allowed-tool <name>`: Allow specific tools
+- `--disabled-tool <name>`: Disable specific tools
+
+Example: `acp start`, `acp status`, `acp agents`, `acp run "analyze code quality"`
+
+---
+
+解决这个问题
+
+---
+
+可以阅读 trae-cli源码 https://github.com/bytedance/trae-agent
+
+---
+
+确定时0.120.18二进制的bug吗？他们说没有bug，需要你解决，可以查看web上trae cli的acp用法、acp协议本身的用法，检查代码是否有bug
+
+---
+
+继续
+
+---
+
+每次验证必须把src/index.js 编译成dist/index.js，把这个信息记录到 agents.md，避免以后遗忘
+
+---
+
+继续acp问题的修复

@@ -1,0 +1,116 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "a09ff5cf4014",
+  "session_id": "ses_24b0a5ac8ffeq1HnxF5mS5K6N6",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-22T12:05:52.76303Z",
+  "branch": "main",
+  "checkpoints_count": 6,
+  "files_touched": [
+    "AGENTS.md",
+    "dist/commands/acp.js",
+    "dist/index.js",
+    "dist/utils/acp-client.js",
+    "dist/utils/acp-server-manager.js",
+    "src/commands/acp.ts",
+    "src/utils/acp-client.ts",
+    "src/utils/acp-server-manager.ts"
+  ],
+  "agent": "OpenCode",
+  "model": "Qwen3.6-Plus",
+  "turn_id": "b58b7608914b",
+  "token_usage": {
+    "input_tokens": 10337313,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 26321,
+    "api_call_count": 134
+  },
+  "session_metrics": {
+    "turn_count": 6
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-22T12:05:52.731321Z",
+    "agent_lines": 790,
+    "agent_removed": 689,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 7,
+    "total_committed": 790,
+    "total_lines_changed": 1486,
+    "agent_percentage": 99.52893674293405,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 67,
+      "user_lines_removed": 1,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".codex/agents/entire-search.toml": 23,
+        ".codex/config.toml": 3,
+        ".codex/hooks.json": 40,
+        "README.md": 1
+      },
+      "user_removed_per_file": {
+        "README.md": 1
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 67,
+      "agent_lines_removed": 1
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 34,
+      "user_lines_removed": 19,
+      "agent_lines_added": 363,
+      "agent_lines_removed": 1,
+      "user_added_per_file": {
+        "README.md": 33,
+        "commands/sessions.md": 1
+      },
+      "user_removed_per_file": {
+        "README.md": 5,
+        "dist/index.js": 7,
+        "src/commands/rescue.ts": 7
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 443,
+      "agent_lines_removed": 22
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 38,
+      "user_lines_removed": 0,
+      "agent_lines_added": 1075,
+      "agent_lines_removed": 5152,
+      "user_added_per_file": {
+        "test-acp.js": 38
+      }
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 1127,
+      "agent_lines_removed": 5152
+    },
+    {
+      "checkpoint_number": 7,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 1446,
+      "agent_lines_removed": 742
+    }
+  ]
+}
