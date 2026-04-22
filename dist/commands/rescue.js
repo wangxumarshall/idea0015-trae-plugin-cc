@@ -44,19 +44,10 @@ function getRecentChanges() {
 }
 async function rescue(args) {
     let context = '';
-    let retries = 3;
-    let force = false;
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--context' && args[i + 1]) {
             context = args[i + 1];
             i++;
-        }
-        else if (args[i] === '--retries' && args[i + 1]) {
-            retries = parseInt(args[i + 1]) || 3;
-            i++;
-        }
-        else if (args[i] === '--force') {
-            force = true;
         }
     }
     console.log('🔧 [Trae Plugin] Rescue Mode');

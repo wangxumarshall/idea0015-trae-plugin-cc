@@ -59,6 +59,12 @@ async function review(args, isAdversarial = false) {
             console.log('\n审查结果:\n');
             console.log(result.output);
         }
+        else {
+            if (result.output) {
+                console.log('\n## 审查结果\n');
+                console.log(result.output);
+            }
+        }
         if (result.sessionId) {
             console.log(`\n会话 ID: ${result.sessionId}`);
             console.log(`使用 /trae:run "继续审查" --resume ${result.sessionId} 恢复该会话`);

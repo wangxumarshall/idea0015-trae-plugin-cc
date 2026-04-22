@@ -42,14 +42,25 @@ const child_process_1 = require("child_process");
 const util_1 = require("util");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
+const os = __importStar(require("os"));
 exports.execAsync = (0, util_1.promisify)(child_process_1.exec);
 const PLUGIN_DIR = path.join(process.cwd(), '.claude-trae-plugin');
+function getTraeCliEnv() {
+    const env = { ...process.env };
+    const homeBin = path.join(os.homedir(), '.local', 'bin');
+    const existingPath = env.PATH || '';
+    if (!existingPath.split(':').includes(homeBin)) {
+        env.PATH = `${homeBin}:${existingPath}`;
+    }
+    return env;
+}
 function isSafeGitRef(ref) {
     return /^[A-Za-z0-9._\/-]+$/.test(ref);
 }
 async function isTraeCliInstalled() {
     try {
-        await (0, exports.execAsync)('which trae-cli');
+        const env = getTraeCliEnv();
+        await (0, exports.execAsync)('which trae-cli', { env });
         return true;
     }
     catch {
@@ -79,6 +90,7 @@ function ensurePluginDir() {
 }
 async function runTraeCli(prompt, background = false) {
     ensurePluginDir();
+    const env = getTraeCliEnv();
     const timestamp = Date.now();
     const logFile = path.join(PLUGIN_DIR, `${timestamp}.log`);
     const pidFile = path.join(PLUGIN_DIR, `${timestamp}.pid`);
@@ -87,7 +99,8 @@ async function runTraeCli(prompt, background = false) {
         const err = fs.openSync(logFile, 'a');
         const child = (0, child_process_1.spawn)('trae-cli', ['--print', prompt], {
             detached: true,
-            stdio: ['ignore', out, err]
+            stdio: ['ignore', out, err],
+            env,
         });
         child.unref();
         if (child.pid) {
@@ -97,7 +110,8 @@ async function runTraeCli(prompt, background = false) {
     }
     return new Promise((resolve, reject) => {
         const child = (0, child_process_1.spawn)('trae-cli', ['--print', prompt], {
-            stdio: ['ignore', 'pipe', 'pipe']
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env,
         });
         if (child.pid) {
             fs.writeFileSync(pidFile, child.pid.toString());

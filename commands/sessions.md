@@ -21,6 +21,7 @@ description: 管理 Trae Agent 会话历史与上下文
 - `context <id>`: 获取完整上下文摘要
 - `find <topic>`: 按主题搜索会话
 - `delete <id>`: 删除会话
+- `delete-smoke`: 批量删除标题或 ID 包含 "smoke" 的会话（用于清理测试数据）
 
 **Options:**
 - `--cwd <path>`: 按工作目录筛选 (list/recent)

@@ -42,7 +42,14 @@ class SessionReader {
     historyFile;
     jsonOutputCache = new Map();
     constructor() {
-        const cacheDir = path.join(os.homedir(), 'Library', 'Caches', 'trae_cli');
+        const homeDir = os.homedir();
+        const candidates = [
+            path.join(homeDir, 'Library', 'Caches', 'trae-cli'),
+            path.join(homeDir, 'Library', 'Caches', 'trae_cli'),
+            path.join(homeDir, '.cache', 'trae-cli'),
+            path.join(homeDir, '.cache', 'trae_cli'),
+        ];
+        const cacheDir = candidates.find(dir => fs.existsSync(dir)) || candidates[0];
         this.sessionsDir = path.join(cacheDir, 'sessions');
         this.historyFile = path.join(cacheDir, 'history.jsonl');
     }

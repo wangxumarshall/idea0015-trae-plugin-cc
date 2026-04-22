@@ -99,7 +99,13 @@ class AuthBridge {
         return this.config?.plugins || [];
     }
     buildSpawnEnv() {
-        return { ...process.env };
+        const env = { ...process.env };
+        const homeBin = path.join(os.homedir(), '.local', 'bin');
+        const existingPath = env.PATH || '';
+        if (!existingPath.split(':').includes(homeBin)) {
+            env.PATH = `${homeBin}:${existingPath}`;
+        }
+        return env;
     }
 }
 exports.AuthBridge = AuthBridge;

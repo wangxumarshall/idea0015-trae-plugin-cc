@@ -19,18 +19,22 @@ async function runTask(args) {
         else if (arg === '--yolo' || arg === '-y') {
             config.yolo = true;
         }
+        else if (arg === '--resume' && args[i + 1] && !args[i + 1].startsWith('-')) {
+            config.resume = args[i + 1];
+            i++;
+        }
         else if (arg === '--resume' || arg === '--resume=AUTO') {
             config.resume = 'AUTO';
         }
         else if (arg.startsWith('--resume=')) {
             config.resume = arg.substring('--resume='.length);
         }
-        else if (arg === '--resume' && args[i + 1]) {
-            config.resume = args[i + 1];
-            i++;
-        }
         else if (arg === '--session-id' && args[i + 1]) {
             config.sessionId = args[i + 1];
+            i++;
+        }
+        else if ((arg === '--worktree' || arg === '-w') && args[i + 1] && !args[i + 1].startsWith('-')) {
+            config.worktree = args[i + 1];
             i++;
         }
         else if (arg === '--worktree' || arg === '-w') {
@@ -38,10 +42,6 @@ async function runTask(args) {
         }
         else if (arg.startsWith('--worktree=')) {
             config.worktree = arg.substring('--worktree='.length);
-        }
-        else if (arg === '--worktree' && args[i + 1]) {
-            config.worktree = args[i + 1];
-            i++;
         }
         else if (arg === '--allowed-tool' && args[i + 1]) {
             config.allowedTools = config.allowedTools || [];

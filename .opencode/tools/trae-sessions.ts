@@ -18,6 +18,7 @@ export default tool({
         "recent",
         "find",
         "delete",
+        "delete-smoke",
       ])
       .describe("操作类型"),
     session_id: tool.schema
