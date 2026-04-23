@@ -1,0 +1,82 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "fb41028f3781",
+  "session_id": "ses_247f9a778ffesGpZF9ek5B4KzS",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-23T01:54:46.855038Z",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [
+    ".opencode/plugins/trae-hooks.ts",
+    ".opencode/tools/trae-acp.ts",
+    ".opencode/tools/trae-cancel.ts",
+    ".opencode/tools/trae-rescue.ts",
+    ".opencode/tools/trae-result.ts",
+    ".opencode/tools/trae-review.ts",
+    ".opencode/tools/trae-run.ts",
+    ".opencode/tools/trae-sessions.ts",
+    ".opencode/tools/trae-setup.ts",
+    ".opencode/tools/trae-status.ts"
+  ],
+  "agent": "OpenCode",
+  "model": "Qwen3.6-Plus",
+  "turn_id": "9b0d8efc4255",
+  "token_usage": {
+    "input_tokens": 534108,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 4332,
+    "api_call_count": 19
+  },
+  "session_metrics": {
+    "turn_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-23T01:54:46.849862Z",
+    "agent_lines": 16,
+    "agent_removed": 11,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 2,
+    "total_committed": 16,
+    "total_lines_changed": 29,
+    "agent_percentage": 93.10344827586206,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 8,
+      "user_lines_removed": 2,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".opencode/plugins/trae-hooks.ts": 8
+      },
+      "user_removed_per_file": {
+        ".opencode/plugins/trae-hooks.ts": 2
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 8,
+      "agent_lines_removed": 2
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 26,
+      "agent_lines_removed": 13
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 26,
+      "agent_lines_removed": 13
+    }
+  ]
+}
