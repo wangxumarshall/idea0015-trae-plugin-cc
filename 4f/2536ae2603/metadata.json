@@ -1,0 +1,41 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "4f2536ae2603",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/commands/acp.ts",
+    "src/commands/hooks.ts",
+    "src/commands/jobs.ts",
+    "src/commands/rescue.ts",
+    "src/commands/review.ts",
+    "src/commands/run.ts",
+    "src/commands/sessions.ts",
+    "src/commands/setup.ts",
+    "src/utils.ts",
+    "src/utils/acp-client.ts",
+    "src/utils/acp-server-manager.ts",
+    "src/utils/auth-bridge.ts",
+    "src/utils/branch-detection.ts",
+    "src/utils/context-bridge.ts",
+    "src/utils/env.ts",
+    "src/utils/session-reader.ts",
+    "src/utils/trae-executor.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/4f/2536ae2603/0/metadata.json",
+      "transcript": "/4f/2536ae2603/0/full.jsonl",
+      "content_hash": "/4f/2536ae2603/0/content_hash.txt",
+      "prompt": "/4f/2536ae2603/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 74950,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 400,
+    "api_call_count": 6
+  }
+}
