@@ -34,7 +34,7 @@ export default tool({
     if (args.disabled_tools)
       for (const t of args.disabled_tools) cliArgs.push("--disabled-tool", t)
 
-    const result = await $`${cliArgs}`.cwd(PLUGIN_DIR)
+    const result = await $`${cliArgs}`.quiet().cwd(PLUGIN_DIR)
     if (result.exitCode !== 0 && result.stderr) {
       process.stderr.write(result.stderr)
     }

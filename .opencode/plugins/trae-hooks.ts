@@ -1,10 +1,21 @@
 import type { Plugin } from "@opencode-ai/plugin"
 import path from "path"
+import fs from "fs"
 
 const SCRIPTS_DIR = path.join(path.dirname(path.dirname(import.meta.dir)), "scripts")
+const LOG_FILE = path.join(path.dirname(import.meta.dir), "trae-hooks.log")
 
 function hookArgs(script: string, hookType: string): string[] {
   return ["node", path.join(SCRIPTS_DIR, script), hookType]
+}
+
+function appendLog(message: string) {
+  try {
+    const ts = new Date().toISOString()
+    fs.appendFileSync(LOG_FILE, `[${ts}] ${message}\n`)
+  } catch {
+    // Silently ignore — log failures must not crash OpenCode
+  }
 }
 
 async function callHook(
@@ -23,10 +34,10 @@ async function callHook(
     const stdout = await new Response(proc.stdout).text()
     const stderr = await new Response(proc.stderr).text()
     await proc.exited
-    if (stdout) console.log(`[trae:${hookType}]`, stdout.trim())
-    if (stderr) console.warn(`[trae:${hookType}]`, stderr.trim())
+    if (stdout) appendLog(`${hookType} stdout: ${stdout.trim()}`)
+    if (stderr) appendLog(`${hookType} stderr: ${stderr.trim()}`)
   } catch (e) {
-    console.error(`[trae-hook:${hookType}]`, e)
+    appendLog(`${hookType} error: ${e}`)
   }
 }
 
@@ -45,10 +56,10 @@ function callHookSync(
     })
     const stdout = new TextDecoder().decode(result.stdout)
     const stderr = new TextDecoder().decode(result.stderr)
-    if (stdout) console.log(`[trae:${hookType}]`, stdout.trim())
-    if (stderr) console.warn(`[trae:${hookType}]`, stderr.trim())
+    if (stdout) appendLog(`${hookType} stdout: ${stdout.trim()}`)
+    if (stderr) appendLog(`${hookType} stderr: ${stderr.trim()}`)
   } catch (e) {
-    console.error(`[trae-hook-sync:${hookType}]`, e)
+    appendLog(`${hookType} error: ${e}`)
   }
 }
 

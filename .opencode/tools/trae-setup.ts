@@ -10,7 +10,7 @@ export default tool({
   args: {},
   async execute(args, context) {
     const { $ } = await import("bun")
-    const result = await $`node ${DIST_INDEX} setup`.cwd(PLUGIN_DIR)
+    const result = await $`node ${DIST_INDEX} setup`.quiet().cwd(PLUGIN_DIR)
     if (result.exitCode !== 0 && result.stderr) {
       process.stderr.write(result.stderr)
     }
