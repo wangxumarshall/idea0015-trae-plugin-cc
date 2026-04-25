@@ -1,13 +1,23 @@
-import { TraeExecutor, TraeTaskConfig } from '../utils/trae-executor';
+import { TraeExecutor } from '../utils/trae-executor';
 import { ContextBridge } from '../utils/context-bridge';
-import { parseBool, parseValue, parseMultiValue, getNonFlagArgs } from '../utils/args';
+import {
+  HostSessionSummaryArgs,
+  HostSessionSummaryBridge,
+  HostSessionSummaryConfig,
+  splitHostSessionSummaryOverrides,
+} from '../utils/host-session-summary';
+import { TraeTaskConfig } from '../types';
 
 const executor = new TraeExecutor();
 const bridge = new ContextBridge();
+const hostSummaryBridge = new HostSessionSummaryBridge();
 
 export async function runTask(args: string[]): Promise<void> {
   const config: TraeTaskConfig = { prompt: '' };
   const promptParts: string[] = [];
+  const hostSummaryArgs: HostSessionSummaryArgs = {};
+  let hostSummaryConfig: HostSessionSummaryConfig = {};
+  let injectContextSessionId = '';
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -59,18 +69,41 @@ export async function runTask(args: string[]): Promise<void> {
         config.configOverrides[override.substring(0, eqIdx)] = override.substring(eqIdx + 1);
       }
       i++;
+    } else if (arg === '--inject-current-session') {
+      hostSummaryArgs.injectCurrentSession = true;
+    } else if (arg === '--session-summary-source' && args[i + 1]) {
+      hostSummaryArgs.sessionSummarySource = args[i + 1];
+      i++;
+    } else if (arg.startsWith('--session-summary-source=')) {
+      hostSummaryArgs.sessionSummarySource = arg.substring('--session-summary-source='.length);
+    } else if (arg === '--session-summary-text' && args[i + 1]) {
+      hostSummaryArgs.sessionSummaryText = args[i + 1];
+      i++;
+    } else if (arg.startsWith('--session-summary-text=')) {
+      hostSummaryArgs.sessionSummaryText = arg.substring('--session-summary-text='.length);
+    } else if (arg === '--host-session-id' && args[i + 1]) {
+      hostSummaryArgs.hostSessionId = args[i + 1];
+      i++;
+    } else if (arg.startsWith('--host-session-id=')) {
+      hostSummaryArgs.hostSessionId = arg.substring('--host-session-id='.length);
     } else if (arg === '--inject-context' && args[i + 1]) {
-      const context = bridge.buildContextFromSession(args[i + 1]);
-      if (context) {
-        promptParts.push(context);
-      }
+      injectContextSessionId = args[i + 1];
       i++;
     } else if (!arg.startsWith('-')) {
       promptParts.push(arg);
     }
   }
 
-  config.prompt = promptParts.join(' ');
+  const { hostConfig, remainingOverrides } = splitHostSessionSummaryOverrides(config.configOverrides);
+  hostSummaryConfig = hostConfig;
+  config.configOverrides = remainingOverrides;
+
+  const userPrompt = promptParts.join(' ').trim();
+  const hostSummary = hostSummaryBridge.buildPrefix(hostSummaryArgs, hostSummaryConfig);
+  const traeContext = injectContextSessionId
+    ? bridge.buildContextFromSession(injectContextSessionId)
+    : '';
+  config.prompt = hostSummaryBridge.composePrompt(hostSummary.prefix, traeContext, userPrompt);
 
   if (!config.prompt) {
     console.log('请提供要执行的任务描述，例如:');
@@ -81,7 +114,12 @@ export async function runTask(args: string[]): Promise<void> {
     console.log('  run "隔离开发" --worktree');
     console.log('  run "任务" --json');
     console.log('  run "任务" --inject-context <session-id>');
+    console.log('  run "任务" --inject-current-session --session-summary-source auto');
     return;
+  }
+
+  if (hostSummary.notice) {
+    console.log(hostSummary.notice);
   }
 
   if (config.resume) {

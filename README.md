@@ -10,6 +10,7 @@ The plugin bridges [**Claude Code**](https://claude.ai/code) and [**OpenCode**](
 | **Code Review** | Automatic git diff + professional review — standard or adversarial (extremely strict), with smart base branch detection and change-size estimation |
 | **Session Management** | Query trae-cli's history: conversations, tool calls, context summaries, topic search, and bulk cleanup |
 | **ACP Protocol** | JSON-RPC over STDIO for inter-agent communication (start/stop servers, discover agents, execute/stream tasks) |
+| **Host Session Summary Injection** | Inject the current Claude Code / OpenCode session summary into `run` and prompt-based `acp` actions for cleaner handoff |
 | **Background Tasks** | Long-running tasks with PID tracking, status listing, result retrieval, and cancellation |
 | **Lifecycle Hooks** | Auto-triggered on session start/end/stop: env checks, background task reminders, uncommitted-change gates |
 
@@ -22,16 +23,17 @@ The plugin bridges [**Claude Code**](https://claude.ai/code) and [**OpenCode**](
 │  ┌──────────────────────┐          ┌──────────────────────────┐   │
 │  │    Claude Code       │          │       OpenCode           │   │
 │  ├──────────────────────┤          ├──────────────────────────┤   │
-│  │ 10 Slash Commands    │          │  9 Tools + 10 Commands   │   │
+│  │ 11 Slash Commands    │          │  9 Tools + 10 Commands   │   │
 │  │    commands/*.md     │          │    tools/ + commands/    │   │
-│  │ 4  MCP Tools (.json) │          │  Event Hooks (.ts)       │   │
+│  │ 5  MCP Tools (.json) │          │  Event Hooks (.ts)       │   │
 │  │ 4  Lifecycle Hooks   │          │    plugins/              │   │
 │  └──────────┬───────────┘          └──────────┬───────────────┘   │
 │             │                                  │                    │
 │  ┌──────────▼──────────────────────────────────▼───────────────┐   │
 │  │              Core CLI (src/ → dist/index.js)                 │   │
 │  │  setup | run | review | adversarial-review | sessions |      │   │
-│  │  acp | status | result | cancel | rescue | hooks            │   │
+│  │  acp | session-summary | status | result | cancel | rescue | │   │
+│  │  hooks                                                    │   │
 │  └──────────────────────────┬──────────────────────────────────┘   │
 │                             │                                       │
 │                    ┌─────────▼──────────┐                          │
@@ -122,7 +124,7 @@ Expected output:
 /trae:acp run "分析代码质量"            # execute via ACP
 ```
 
-Claude Code additionally auto-registers 4 MCP tools (`trae_run`, `trae_review`, `trae_sessions`, `trae_acp`) for AI-autonomous invocation.
+Claude Code additionally auto-registers 5 MCP tools (`trae_run`, `trae_review`, `trae_sessions`, `trae_acp`, `trae_session_summary`) for AI-autonomous invocation.
 
 **OpenCode** (Bun tools — agent calls tools):
 
@@ -132,7 +134,7 @@ Claude Code additionally auto-registers 4 MCP tools (`trae_run`, `trae_review`, 
 | `trae-run` | `run` | Execute task |
 | `trae-review` | `review` / `adversarial-review` | Code review |
 | `trae-sessions` | `sessions` | Session management (9 actions) |
-| `trae-acp` | `acp` | ACP protocol (6 actions) |
+| `trae-acp` | `acp` | ACP protocol (7 actions, including multi-turn chat) |
 | `trae-status` | `status` | Background task status |
 | `trae-result` | `result` | Get task output |
 | `trae-cancel` | `cancel` | Cancel task |
@@ -189,6 +191,10 @@ Call **trae-run** tool with parameters:
 | `query_timeout` | string | No | 单次查询超时，如 `"30s"`, `"5m"` |
 | `bash_tool_timeout` | string | No | Bash 工具超时 |
 | `inject_context` | string | No | 注入指定会话的上下文到 prompt 中 |
+| `inject_current_session` | boolean | No | 尝试注入宿主当前会话摘要 |
+| `session_summary_source` | enum | No | 宿主摘要来源：`"auto"`, `"cache"`, `"off"` |
+| `session_summary_text` | string | No | 显式提供宿主摘要文本，优先级高于缓存 |
+| `host_session_id` | string | No | 读取指定宿主会话 ID 的摘要缓存 |
 </td></tr></table>
 
 **OpenCode usage examples** (agent calls tool with these parameters):
@@ -201,13 +207,20 @@ Call **trae-run** tool with parameters:
 - `trae-run(prompt="实验性变更", worktree="__auto__")`
 - `trae-run(prompt="运行脚本", allowed_tools=["Bash", "Edit"])`
 - `trae-run(prompt="继续优化", inject_context="abc123")`
+- `trae-run(prompt="继续当前实现", session_summary_source="cache", host_session_id="claude-session-123")`
 
 **Claude Code usage examples:**
 ```bash
 /trae:run "重构认证模块" --background --json
 /trae:run "继续" --resume --yolo
 /trae:run "修复 bug" --worktree --allowed-tool Edit --allowed-tool Bash
+/trae:run "继续当前实现" --inject-current-session --session-summary-source cache --host-session-id claude-session-123
 ```
+
+`run` 的 prompt 拼接顺序固定为：
+1. 宿主当前会话摘要
+2. Trae 历史 session 上下文（`--inject-context`）
+3. 原始用户 prompt
 
 ---
 
@@ -282,7 +295,7 @@ Call **trae-sessions** tool with parameters:
 
 ### `acp`
 
-ACP protocol: **JSON-RPC over STDIO** (not HTTP). Enables Agent-to-Agent communication.
+ACP protocol: **JSON-RPC over STDIO** (not HTTP). Enables Agent-to-Agent communication and session-based chat.
 
 <table><tr><td>Claude Code</td><td>
 
@@ -295,14 +308,45 @@ Call **trae-acp** tool with parameters:
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `action` | enum | Yes | `start`, `stop`, `status`, `agents`, `run`, `stream` |
-| `prompt` | string | No | 任务描述（run/stream 需要） |
-| `yolo` | boolean | No | YOLO 模式（start/run） |
-| `allowed_tools` | string[] | No | 允许的工具（start） |
-| `disabled_tools` | string[] | No | 禁用的工具（start） |
+| `action` | enum | Yes | `start`, `stop`, `status`, `agents`, `run`, `stream`, `chat` |
+| `prompt` | string | No | 任务描述（run/stream/chat 需要；chat 在非交互调用中执行单轮后退出） |
+| `yolo` | boolean | No | YOLO 模式（start/run/chat 自动启动 server 时） |
+| `allowed_tools` | string[] | No | 允许的工具（start/chat 自动启动 server 时） |
+| `disabled_tools` | string[] | No | 禁用的工具（start/chat 自动启动 server 时） |
+| `session_id` | string | No | `chat`：指定已有 session ID |
+| `resume` | string | No | `chat`：恢复 session，传入会话 ID 或 `"AUTO"` 恢复当前目录最近会话 |
+| `cwd` | string | No | `chat`：创建/加载 session 时使用的工作目录 |
+| `inject_current_session` | boolean | No | `run`/`stream`/`chat`：尝试注入宿主当前会话摘要 |
+| `session_summary_source` | enum | No | `run`/`stream`/`chat`：宿主摘要来源 |
+| `session_summary_text` | string | No | `run`/`stream`/`chat`：显式提供宿主摘要文本 |
+| `host_session_id` | string | No | `run`/`stream`/`chat`：读取指定宿主会话 ID 的摘要缓存 |
 </td></tr></table>
 
-> **Note**: `acp start` is a blocking call — it holds the process alive for the STDIO pipe. Use `agents`, `run`, or `stream` for interactive use (they auto-start the server).
+> **Note**: `acp start` is a blocking call — it holds the process alive for the STDIO pipe. Use `agents`, `run`, `stream`, or `chat` for interactive use (they auto-start the server).
+
+**`chat` behavior**
+- In a real terminal (TTY), `chat` keeps the ACP server alive and supports multi-turn conversation in the same session.
+- In non-interactive callers (for example MCP/OpenCode tool execution), `chat` executes one turn and exits. Pass `session_id` or `resume` to continue the same session across calls.
+- Host session summary injection only happens on the first `chat` turn; subsequent turns rely on the ACP session itself to carry context.
+- Local chat commands: `/help`, `/session`, `/cancel`, `/exit`, `/quit`
+
+OpenCode tool wrappers default to `host_session_summary.enabled=true` and `host_session_summary.source=auto`, so `trae-run` and prompt-based `trae-acp` actions automatically try to inject the current OpenCode session summary unless explicitly disabled.
+
+---
+
+### `session-summary`
+
+Save a compact host-session summary for later `run` / `acp` injection.
+
+<table><tr><td>Claude Code</td><td>
+
+```
+/trae:session-summary save --platform claude --session-id <id> --text "summary"
+```
+</td></tr><tr><td>OpenCode</td><td>
+
+No dedicated tool is required. OpenCode refreshes its own session summary cache automatically on idle/turn-end.
+</td></tr></table>
 
 ---
 

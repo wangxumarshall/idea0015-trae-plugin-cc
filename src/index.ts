@@ -6,6 +6,7 @@ import { handleHook } from './commands/hooks';
 import { rescue } from './commands/rescue';
 import { sessions } from './commands/sessions';
 import { acp } from './commands/acp';
+import { sessionSummary } from './commands/session-summary';
 import { getErrorMessage } from './types/errors';
 
 async function main() {
@@ -15,7 +16,7 @@ async function main() {
 
   if (!command) {
     console.log('用法: trae <command> [args]');
-    console.log('命令: setup, review, adversarial-review, run, status, result, cancel, sessions, acp');
+    console.log('命令: setup, review, adversarial-review, run, status, result, cancel, sessions, acp, session-summary');
     process.exit(1);
   }
 
@@ -54,9 +55,12 @@ async function main() {
       case 'acp':
         await acp(cmdArgs);
         break;
+      case 'session-summary':
+        await sessionSummary(cmdArgs);
+        break;
       default:
         console.log(`未知命令: ${command}`);
-        console.log('可用命令: setup, review, adversarial-review, run, status, result, cancel, sessions, acp');
+        console.log('可用命令: setup, review, adversarial-review, run, status, result, cancel, sessions, acp, session-summary');
         process.exit(1);
     }
   } catch (error: unknown) {

@@ -25,6 +25,10 @@ allowed-tools: Bash(trae-cli:*)
 - `--query-timeout <duration>`: 单次查询超时 (如 30s, 5m)
 - `--bash-tool-timeout <duration>`: Bash 工具超时
 - `--inject-context <session-id>`: 注入指定会话的上下文到 prompt 中
+- `--inject-current-session`: 尝试注入宿主当前会话摘要
+- `--session-summary-source <auto|cache|off>`: 宿主摘要来源
+- `--session-summary-text "<text>"`: 显式提供宿主摘要文本
+- `--host-session-id <id>`: 读取指定宿主会话 ID 的摘要缓存
 - `-c k=v`: 覆盖配置项 (可多次指定)
 
 **Examples:**
@@ -39,6 +43,7 @@ allowed-tools: Bash(trae-cli:*)
 /trae:run "执行脚本" --allowed-tool Bash --allowed-tool Edit
 /trae:run "长任务" --query-timeout 5m
 /trae:run "继续优化" --inject-context 0d3cbdc3-e365-468e-982c-fb3d5849f5cc
+/trae:run "继续当前实现" --inject-current-session --session-summary-source cache --host-session-id claude-session-123
 ```
 
 **Internal Execution:**

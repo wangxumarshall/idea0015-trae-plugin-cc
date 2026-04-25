@@ -24,3 +24,6 @@ Usage examples:
 - `task "experimental changes" --worktree`
 - `task "run script" --allowed-tool Bash --allowed-tool Edit`
 - `task "continue optimization" --inject-context abc123`
+- `task "continue current implementation" --session-summary-source cache --host-session-id claude-session-123`
+
+OpenCode tools default to `host_session_summary.enabled=true` and `host_session_summary.source=auto`, so the current OpenCode session summary will be injected unless explicitly disabled with `inject_current_session=false` or `session_summary_source="off"`.

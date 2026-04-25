@@ -7,6 +7,10 @@ export function getPluginDir(): string {
   return path.join(process.cwd(), PLUGIN_DIR_NAME);
 }
 
+export function getHostSessionSummaryDir(): string {
+  return path.join(getPluginDir(), 'host-session-summaries');
+}
+
 export function getCliCacheDirs(): string[] {
   const homeDir = os.homedir();
   return [

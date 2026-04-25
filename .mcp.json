@@ -17,7 +17,11 @@
           "worktree": { "type": "string", "description": "在隔离的 git worktree 中工作，'__auto__' 自动生成名称" },
           "query_timeout": { "type": "string", "description": "单次查询超时，如 30s, 5m" },
           "bash_tool_timeout": { "type": "string", "description": "Bash 工具超时" },
-          "inject_context": { "type": "string", "description": "注入指定会话的上下文到 prompt 中" }
+          "inject_context": { "type": "string", "description": "注入指定会话的上下文到 prompt 中" },
+          "inject_current_session": { "type": "boolean", "description": "尝试注入宿主当前会话摘要" },
+          "session_summary_source": { "type": "string", "enum": ["auto", "cache", "off"], "description": "宿主会话摘要来源" },
+          "session_summary_text": { "type": "string", "description": "显式提供宿主会话摘要文本，优先级高于缓存" },
+          "host_session_id": { "type": "string", "description": "读取指定宿主会话 ID 的摘要缓存" }
         },
         "required": ["prompt"]
       }
@@ -57,20 +61,55 @@
     },
     {
       "name": "trae_acp",
-      "description": "通过 ACP (Agent Communication Protocol) 与 Trae Agent 交互。启动/停止 ACP Server，发现可用 Agent，执行任务或流式获取结果。ACP Server 通过 trae-cli acp serve 启动。",
+      "description": "通过 ACP (Agent Communication Protocol) 与 Trae Agent 交互。启动/停止 ACP Server，发现可用 Agent，执行任务、流式获取结果或在同一 session 继续对话。ACP 使用 STDIO JSON-RPC，由 trae-cli acp serve 启动。",
       "parameters": {
         "type": "object",
         "properties": {
           "action": {
             "type": "string",
-            "enum": ["start", "stop", "status", "agents", "run", "stream"],
-            "description": "start: 启动 ACP Server; stop: 停止; status: 查看状态; agents: 发现可用 Agent; run: 执行任务; stream: 流式执行任务"
+            "enum": ["start", "stop", "status", "agents", "run", "stream", "chat"],
+            "description": "start: 启动 ACP Server; stop: 停止; status: 查看状态; agents: 发现可用 Agent; run: 执行任务; stream: 流式执行任务; chat: 基于同一 session 继续对话"
           },
-          "prompt": { "type": "string", "description": "任务描述 (run/stream 需要)" },
-          "yolo": { "type": "boolean", "description": "YOLO 模式 (start/run)" },
-          "allowed_tools": { "type": "array", "items": { "type": "string" }, "description": "允许的工具 (start)" },
-          "disabled_tools": { "type": "array", "items": { "type": "string" }, "description": "禁用的工具 (start)" }
+          "prompt": { "type": "string", "description": "任务描述 (run/stream/chat 需要；chat 在非交互调用中执行单轮后退出)" },
+          "yolo": { "type": "boolean", "description": "YOLO 模式 (start/run/chat 自动启动 server 时)" },
+          "allowed_tools": { "type": "array", "items": { "type": "string" }, "description": "允许的工具 (start/chat 自动启动 server 时)" },
+          "disabled_tools": { "type": "array", "items": { "type": "string" }, "description": "禁用的工具 (start/chat 自动启动 server 时)" },
+          "session_id": { "type": "string", "description": "chat: 指定已有 session ID" },
+          "resume": { "type": "string", "description": "chat: 恢复会话，传入 session ID 或 'AUTO' 恢复当前目录最近会话" },
+          "cwd": { "type": "string", "description": "chat: 创建/加载 session 时使用的工作目录" },
+          "inject_current_session": { "type": "boolean", "description": "run/stream/chat: 尝试注入宿主当前会话摘要" },
+          "session_summary_source": { "type": "string", "enum": ["auto", "cache", "off"], "description": "run/stream/chat: 宿主会话摘要来源" },
+          "session_summary_text": { "type": "string", "description": "run/stream/chat: 显式提供宿主会话摘要文本" },
+          "host_session_id": { "type": "string", "description": "run/stream/chat: 读取指定宿主会话 ID 的摘要缓存" }
         }
+      }
+    },
+    {
+      "name": "trae_session_summary",
+      "description": "保存宿主会话摘要缓存，供 run/acp 的当前会话摘要注入使用。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": ["save"],
+            "description": "当前仅支持 save"
+          },
+          "platform": {
+            "type": "string",
+            "enum": ["claude", "opencode"],
+            "description": "宿主平台"
+          },
+          "session_id": {
+            "type": "string",
+            "description": "宿主会话 ID"
+          },
+          "text": {
+            "type": "string",
+            "description": "紧凑摘要文本"
+          }
+        },
+        "required": ["action", "platform", "session_id", "text"]
       }
     }
   ]
